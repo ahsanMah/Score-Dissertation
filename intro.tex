@@ -2,12 +2,19 @@
 
 \section{Motivation}
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.   
+Anomaly detection in medical images is an active area of research with many potential benefits for healthcare. Identifying anomalies in images such as MRI scans can assist clinicians in detecting conditions earlier and initiating treatment more rapidly. However, anomaly detection faces considerable challenges, especially in domains where labeled data is scarce, and normal anatomy exhibits high inter-subject variability.
+
+[mention unsupervised]Traditional machine learning methods often fail to identify anomalies amidst diverse normal variations.
+
+Recent methods based on denoising score matching provide a promising solution. By estimating the score (gradient of the log-density), score matching enables precise quantification of how likely samples are under the data distribution without requiring anomalous samples for training. Conceptually, a score is a vector field that points in the direction where the likelihood increases the most. In the context of anomaly detection in medical imaging, score matching offers a powerful, yet under-explored, tool to discern pathological patterns from normal variations.
+
+I posit that a multiscale analysis of score estimates can effectively identify anomalies stemming from multiple underlying factors. In this research I interpret "mutliscale" to be multiple noise levels of perturbation.
+Intuitively, higher noise levels obscure local information forcing the model to learn more global patterns. 
+
+By utilizing multiple noise levels during training, both global and local contextual features can be captured.
+
+This multiscale capacity is particularly beneficial for anomaly detection in medical images, where anomalies may manifest in localized textures or global shape.
+
 
 \section{Thesis Statement}
 
-Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.   
-
-Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.   
-
-Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer
