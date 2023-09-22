@@ -6,4 +6,28 @@
 
 \subsection{Noise Conditioned Score Matching}
 
-\section{Medical Image Anomaly Detection}
+\subsection{Connecting Score Matching to Diffusion Models}
+Recently, \tempcite{song 2021} described a connection between noise-conditioned score matching and diffusion models \tempcite{diffusion-jho}. The connection is presented under the lens of generative modeling, and provides a unifying framework for Markov-based and continuous-time diffusion models based on estimating the scores. 
+For the purposes of this research, we focus on the relaxation of the discretized nature of noise conditioned score matching.
+
+\subsubsection*{Continuous-Time Score Matching}
+
+
+\section{Anomaly Detection}
+
+This section provides a summary of the relevant methodologies in anomaly detection.
+
+\subsection{Likelihood-based}
+\begin{itemize}
+    \item Density 
+    \item Energy
+    \item One-class objectives
+\end{itemize}
+
+\subsection{Restoration based}
+
+\subsection{Out-of-Distribution Detection}
+A considerable amount of effort has gone into detecting out-of-distribution (OOD) data samples, especially under the lens of classification models. Thus, there is a class of methods that augment existing classifiers to better detect OOD input samples, rather than training an unsupervised detector from scratch. Perhaps the seminal work in this area was done by \cite{Hendrycks2019}. The authors were the first to substantively bring attention to a domain-shift discrepancy exhibited by a vast range of deep learning models, and established an experimental test-bed which served as a template for subseqeunt OOD work. Their purported method was thresholding of softmax probabilities of a well-trained classifier. Their results have since been beaten by more recent work. \cite{Liang2017} propose ODIN as a post-hoc method that utilizes a pretrained network to reliably separate OOD samples from the inlier distribution. They achieve this via i) perturbing the input image in the gradient direction of the highest (inlier) softmax probability and ii) scaling the temperature of the softmax outputs of the network for the best OOD separation. However, ODIN heavily depends on careful tuning of its hyperparameters. \cite{devries2018learning} train their networks to predict confidence estimates in addition to softmax probabilities, which can then be used to threshold outliers. They show significant improvements over \cite{Hendrycks2019} and some improvements over ODIN. Another concurrent work by \cite{Lee2018} jointly trained a GAN alongside the classifier network to generate realistic OOD examples, requiring an additional OOD set during training time. The final trained network is also unable to generalize to other unseen datasets.
+
+
+\subsection{Methods Common to Medical Imaging}
