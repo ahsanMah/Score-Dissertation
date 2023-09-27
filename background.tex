@@ -1,8 +1,42 @@
 \chapter{Background and Prior Work}
 
 \section{Score Matching}
+Recall that a score is defined as the gradient of the log probability density, with respect to the data. Conceptually, a score is a vector field that points in the direction where the log density grows the most. 
+\tempcit{Hyvernan} introduced score matching as a means of computing the parameters of an unnormalized probability density models. The authors proved the remarkable property that learning the score involves the gradient of the score function itself as shown in Equation~\ref{eq:implicit_sm}. I will follow the naming scheme used in \tempcite{Vincent} and name this objective as Implicit Score Matching.
+
+\begin{align}
+\label{eq:implicit_sm}
+    J_{ISM}(\theta) &= \mathbb{E}_{p(x)} \frac{1}{2} \s{ \norm{s_\theta(x) - \nabla_x \log p(x) }^2 } \\
+    &= \mathbb{E}_{p(x)} \s{ \norm{s_\theta(x)}^2 + \sum^{d}_{i=1}{\partial{x_{i}} s(x_{i}) } }
+\end{align}
+
 
 \subsection{Denoising Score Matching}
+
+\tempcite{Vincent} formalized a connection between denoising autoencoders and score matching, and proposed the denoising score matching (DSM) objective.
+
+The authors noted how \tempcite{Hyvernan} had suggested the possibility of an alternate score matching objective; one that was based on regressing against the data gradients of a Parzen window density estimator.
+
+\begin{align}
+\label{eq:explicit_sm}
+    J_{ESM}(\theta) &= \mathbb{E}_{q_{\sigma}(x)} \frac{1}{2} \s{ \norm{s_\theta(x) - \nabla_x \log q_{\sigma}(x) }^2 }
+\end{align}
+
+\tempcit{Vincent} showed that under certain regularity conditions
+\footnote{For any window size $\sigma > 0$, the kernel $q_{\sigma}$ is differentiable, converges to 0 at infinity, and has a finite gradient norm},
+the Parzen window based objective is equivalent to the original objective proposed by \tempcite{Hyvernan} in \eqref{eq:implicit_sm}
+
+Taking it one step further, assume the Parzen density estimate is chosen to estimate the joint density of clean and corrupted samples $(x, \tilde{x})$ i.e. $q_{\sigma}(x, \tilde{x}) = q_{\sigma}(x | \tilde{x} ) p(x) $. Thus, the DSM objective is simply:
+
+\begin{align}
+\label{eq:denoising_sm}
+    J_{DSM}(\theta) &= \mathbb{E}_{q_{\sigma}(x, \tilde{x})} \frac{1}{2} \s{ \norm{s_\theta(\tilde{x}) - \nabla_{\tilde{x}} \log q_{\sigma}(x | \tilde{x}) }^2 }
+\end{align}
+
+DSM mitigates the need for computing second order gradients as is the case for \ref{eq:implicit_sm}. Furthermore, if $q_{\sigma}$ is set as the Gaussian kernel, then $\nabla_x \log q_{\sigma}(\tilde{x}) = \frac{(x - \tilde{x}}{\sigma})$. One can now see the connection between score matching and the denoising autoencoder objective, when using a Gaussian kernel with a fixed scale.
+
+I emphasize that while the original paper and many subsequent works \tempcite{song} use the Gaussian distribution in DSM, the proof holds for \textit{any} differentiable noise distribution.
+I will make use of this fact when deriving a score matching objective for categorical data in Chapter~\ref{ch:gnsm}.
 
 \subsection{Noise Conditioned Score Matching}
 
