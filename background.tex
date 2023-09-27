@@ -2,12 +2,12 @@
 
 \section{Score Matching}
 Recall that a score is defined as the gradient of the log probability density, with respect to the data. Conceptually, a score is a vector field that points in the direction where the log density grows the most. 
-\tempcit{Hyvernan} introduced score matching as a means of computing the parameters of an unnormalized probability density models. The authors proved the remarkable property that learning the score involves the gradient of the score function itself as shown in Equation~\ref{eq:implicit_sm}. I will follow the naming scheme used in \tempcite{Vincent} and name this objective as Implicit Score Matching.
+\tempcite{Hyvernan} introduced score matching as a means of computing the parameters of an unnormalized probability density models. The authors proved the remarkable property that learning the score involves the gradient of the score function itself as shown in Equation~\ref{eq:implicit_sm}. I will follow the naming scheme used in \tempcite{Vincent} and name this objective as Implicit Score Matching.
 
 \begin{align}
 \label{eq:implicit_sm}
-    J_{ISM}(\theta) &= \mathbb{E}_{p(x)} \frac{1}{2} \s{ \norm{s_\theta(x) - \nabla_x \log p(x) }^2 } \\
-    &= \mathbb{E}_{p(x)} \s{ \norm{s_\theta(x)}^2 + \sum^{d}_{i=1}{\partial{x_{i}} s(x_{i}) } }
+    J_{ISM}(\theta) &= \mathbb{E}_{x \sim p(x)} \frac{1}{2} \s{ \norm{s_\theta(x) - \nabla_x \log p(x) }^2 } \\
+    &= \mathbb{E}_{x \sim p(x)} \s{ \norm{s_\theta(x)}^2 + \sum^{d}_{i=1}{\partial{x_{i}} s(x_{i}) } }
 \end{align}
 
 
@@ -19,7 +19,7 @@ The authors noted how \tempcite{Hyvernan} had suggested the possibility of an al
 
 \begin{align}
 \label{eq:explicit_sm}
-    J_{ESM}(\theta) &= \mathbb{E}_{q_{\sigma}(x)} \frac{1}{2} \s{ \norm{s_\theta(x) - \nabla_x \log q_{\sigma}(x) }^2 }
+    J_{ESM}(\theta) &= \mathbb{E}_{x \sim q_{\sigma}(x)} \frac{1}{2} \s{ \norm{s_\theta(x) - \nabla_x \log q_{\sigma}(x) }^2 }
 \end{align}
 
 \tempcit{Vincent} showed that under certain regularity conditions
@@ -30,21 +30,31 @@ Taking it one step further, assume the Parzen density estimate is chosen to esti
 
 \begin{align}
 \label{eq:denoising_sm}
-    J_{DSM}(\theta) &= \mathbb{E}_{q_{\sigma}(x, \tilde{x})} \frac{1}{2} \s{ \norm{s_\theta(\tilde{x}) - \nabla_{\tilde{x}} \log q_{\sigma}(x | \tilde{x}) }^2 }
+    J_{DSM}(\theta) &= \mathbb{E}_{\tilde{x}\sim q_{\sigma}(x, \tilde{x})} \frac{1}{2} \s{ \norm{s_\theta(\tilde{x}) - \nabla_{\tilde{x}} \log q_{\sigma}(x | \tilde{x}) }^2 }
 \end{align}
 
-DSM mitigates the need for computing second order gradients as is the case for \ref{eq:implicit_sm}. Furthermore, if $q_{\sigma}$ is set as the Gaussian kernel, then $\nabla_x \log q_{\sigma}(\tilde{x}) = \frac{(x - \tilde{x}}{\sigma})$. One can now see the connection between score matching and the denoising autoencoder objective, when using a Gaussian kernel with a fixed scale.
+DSM mitigates the need for computing second order gradients as is the case for \ref{eq:implicit_sm}. Furthermore, if $q_{\sigma}$ is set as the Gaussian kernel $\mathcal{N}(\tilde{x} |  x,\,\sigma^{2}I)$, then $\nabla_x \log q_{\sigma}(\tilde{x}) = \frac{(x - \tilde{x}}{\sigma})$. One can now see the connection between score matching and the denoising autoencoder objective, when using a Gaussian kernel with a fixed scale.
 
 I emphasize that while the original paper and many subsequent works \tempcite{song} use the Gaussian distribution in DSM, the proof holds for \textit{any} differentiable noise distribution.
 I will make use of this fact when deriving a score matching objective for categorical data in Chapter~\ref{ch:gnsm}.
 
 \subsection{Noise Conditioned Score Matching}
 
+\tempcite{Song2019} extended the DSM objective in Equation\ref{eq:denoising_sm} to incorporate multiple scales $\sigma$, and train a so-called Noise Conditioned Score Network (NCSN). The authors further outlined an iterative sampling algorithm, dubbed annealed Langevin dynamics, enabling the score network to be employed as a deep generative model. Let $\{\sigma_i\}_{i=1}^L$ be a positive geometric sequence that satisfies $\frac{\sigma_1}{\sigma_2} = ... = \frac{\sigma_{L-1}}{\sigma_{L}} >  1$. NCSN is a conditional network, $s_{\theta}(x,\sigma)$, trained to jointly estimate scores for various levels of noise $\sigma_i$ such that $\forall \sigma \in \{\sigma_i\}_{i=1}^L: s_{\theta}(x,\sigma) \approx \nabla_x \log q_{\sigma}(x)$. In \cite{Song2019}, the conditioning information is explicitly provided via a one-hot vector denoting the noise level used to perturb the data. The network is then trained via a modified denoising score matching objective as shown in Equation\ref{eq:ncsn_dsm}.
+\begin{equation}
+\label{eq:ncsn_dsm}
+\frac{1}{L} \sum_{i=1}^L \lambda(\sigma_i)
+\s{\frac{1}{2} \displaystyle \text{~} \mathbb{E}_{\tilde{x}\sim q_{\sigma_i} (\tilde{x}|x) p_{\text{data}}(x)} \s{ \norm{ s_{\theta}(\tilde{x}, \sigma_i) + (\frac{\tilde{x} - x}{\sigma_i^2}) }^2_2  } }
+\end{equation}
+
+\subsubsection{manifold hypothesis}
+
 \subsection{Connecting Score Matching to Diffusion Models}
-Recently, \tempcite{song 2021} described a connection between noise-conditioned score matching and diffusion models \tempcite{diffusion-jho}. The connection is presented under the lens of generative modeling, and provides a unifying framework for Markov-based and continuous-time diffusion models based on estimating the scores. 
-For the purposes of this research, we focus on the relaxation of the discretized nature of noise conditioned score matching.
+
+In a follow-up work, \tempcite{Song2021} described a connection between noise-conditioned score matching and diffusion models \tempcite{diffusion-jho}. The connection is presented under the lens of generative modeling, and provides a unifying framework for Markov-based and continuous-time diffusion models. The key insight is that successive perturbation of a data point using a scale-dependent noise distribution (as done in NCSNs), follows a Stochastic Differential Equation (SDE). Thus, the `forward' diffusion process can be modeled as an SDE. If one has access to the scores at each time point, it is possible to construct a reverse-time SDE as shown by \cite{anderson1982reverse}. These reverse-SDEs can then be numerically solved using any differential equation solver, only requiring access to the score function. Their work produced high quality images and was seminal in the development of future diffusion models.
 
 \subsubsection*{Continuous-Time Score Matching}
+More relevant to my research, \tempcite{Song2021} enabled a continuous relaxation to the discretized nature of noise conditioned score matching. By defining the noising process as a continuous forward SDE, the user does not have to predetermine the specif number of noise scales, as was the case for NCSN models. This flexibility allows us to train models with many noise scales, but employ a much smaller subset during inference. For generative models, this translates to faster sampling as one can control the number of gradient steps to take. For my research, it gives me the ability to observe different noise scales at test time while maintaining the advantages of using multiple noise scales during training.
 
 
 \section{Anomaly Detection}
