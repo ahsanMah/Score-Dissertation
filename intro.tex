@@ -15,6 +15,18 @@ By utilizing multiple noise levels during training, both global and local contex
 
 This multiscale capacity is particularly beneficial for anomaly detection in medical images, where anomalies may manifest in localized textures or global shape.
 
+Note that the idea of using gradients of the log density  as a means of outlier detection has been done in the past, most notably by \tempcite{yourClassifier,energyOOD}. However, neither work connected the idea to score matching. 
+-> the first only considered ood detexction briefly and observed middling results
+
+-> the latter chnaced upon the gradient norms while exploring  energy-based models for outlier detection.
+
+To my knowledge, my work has been the first to explore anomaly detection from the score matching perspective, and extend by incoporating multiple scales.
+
+
+\section{Defining the term Anomaly}
+As of yet, there is no standard definition of the term anomaly. 
+For the purposes of my research, I will use a probabilistic perspective. A data point will be designated as an anomaly if its probability density, as estimated by a model trained on a typical set, is below a user-defined threshold. 
+
 
 \section{Thesis Statement}
 

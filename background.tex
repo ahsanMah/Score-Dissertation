@@ -22,7 +22,7 @@ The authors noted how \tempcite{Hyvernan} had suggested the possibility of an al
     J_{ESM}(\theta) &= \mathbb{E}_{x \sim q_{\sigma}(x)} \frac{1}{2} \s{ \norm{s_\theta(x) - \nabla_x \log q_{\sigma}(x) }^2 }
 \end{align}
 
-\tempcit{Vincent} showed that under certain regularity conditions
+\tempcite{Vincent} showed that under certain regularity conditions
 \footnote{For any window size $\sigma > 0$, the kernel $q_{\sigma}$ is differentiable, converges to 0 at infinity, and has a finite gradient norm},
 the Parzen window based objective is equivalent to the original objective proposed by \tempcite{Hyvernan} in \eqref{eq:implicit_sm}
 
@@ -59,19 +59,64 @@ More relevant to my research, \tempcite{Song2021} enabled a continuous relaxatio
 
 \section{Anomaly Detection}
 
-This section provides a summary of the relevant methodologies in anomaly detection.
+Unsupervised anomaly detection has been tackled by a myriad of methods \cite{pang_deep_2021,ruff_unifying_2021}, with varying success~\cite{han2022adbench}. This section provides a summary of some methodologies relevant to my research.
 
-\subsection{Likelihood-based}
+\subsection{Probability-based}
+
+Many methods incorporate some form of likelihood or probability density estimation \tempcite{ANOLIKE}. 
+
+\subsubsection*{Density}
+Perhaps the most straight-forward paradigm for detecting anomalous samples is to use the probability density estimate. The principal assumption here is that anomalies are located in low-density regions in the probability space. The principle objective is then to learn the density function representative of the typical (training) data. A trained model will be used to assign probabilities to test samples, with low probabilities signifying anomalies.
+
+
+One class of such models are mixture models that estimate the parameters for a mixture of probability distributions, which are then used to assign likelihoods.
+Examples include Gaussian Mixture Models (GMMs)~\cite{reynolds2009gaussian} and their deep learning counter part, Deep Autoencoding Gaussian Mixture Models (DAGMM)~\cite{zong2018deep}.
+
+There are many deep generative models that allow for the estimation of probability densities. 
+
+\textbf{Autoregressive} models such as Glow and PixelCNN (and their earlier counterparts, NADE and MADE) allow direct access to density estimates. However, \tempcite{Nalisnick} showed that deep likelihood models often fail to detect out-of-distribution samples.
+
+\textbf{Normalizing flow models} and failure
+
+
+Variational Autoencoders~\cite{kingma2013auto} are another branch of generative models that utilize a latent variable factorization to approximate the density. While their behaviour on out-of-distribution samples has not been systematically observed, as with deep likelihood models \tempcite{Nalisnick}, they empirically have middling performance as anomaly detectors.
+
+
+ECOD~\cite{li_ecod_2022} uses a different notion of density and estimates the cumulative distribution function (CDF) for each feature in the data. It then uses the tail probabilities from each learned CDF to designate samples as anomalous.
+
+
 \begin{itemize}
     \item Density 
     \item Energy
-    \item One-class objectives
 \end{itemize}
 
 \subsection{Restoration based}
+
+\subsection{One-Class Objectives}
+
+Despite the name, these methods do not utilize labeled samples. Instead, they try to learn the boundary that best encapsulates the training data; treating all points outside the boundary as outliers. For example, One-Class Support Vector Machines (OC-SVMs)~\cite{ocsvm} try to find the tightest hyperplane around the dataset, while Deep Support Vector Data Descriptors (DSVDD~\cite{pmlr-v80-ruff18a}  will compute the minimal hypersphere that encloses the data. Both methods assume that inliers will fall under the margins, and consequently use the distance to the margin boundaries as a score of outlierness. 
 
 \subsection{Out-of-Distribution Detection}
 A considerable amount of effort has gone into detecting out-of-distribution (OOD) data samples, especially under the lens of classification models. Thus, there is a class of methods that augment existing classifiers to better detect OOD input samples, rather than training an unsupervised detector from scratch. Perhaps the seminal work in this area was done by \cite{Hendrycks2019}. The authors were the first to significantly highlight the domain-shift discrepancy exhibited by a range of deep learning models, and established an experimental test-bed that has served as a template for subsequent OOD work. They posited that OOD samples are likely to be assigned low probabilities and purported the thresholding of softmax probabilities from well-trained classifiers to detect in-domain samples. \cite{Liang2017} propose ODIN as a post-hoc method that utilizes a pretrained network to reliably separate OOD samples from the inlier distribution. They achieve this via a two-step procedure. First, the input image is perturbed in the gradient direction of the highest (inlier) softmax probability. Next, the softmax outputs of the classifier are scaled by a temperature, which is determined via a held out test set. While the authors report good performance, ODIN's effectiveness depends heavily on tuning the hyperparameters, namely the gradient step and the temperature. \cite{devries2018learning} improved upon \cite{Hendrycks2019} (and somewhat upon ODIN) by training networks to produce confidence estimates alongside softmax probabilities for outlier thresholding. Concurrently, \cite{Lee2018} jointly trained a GAN alongside a classifier to generate realistic OOD examples. This required an additional OOD set during training, and the resulting classifiers were unable to generalize to unseen datasets.
 
 
-\subsection{Methods Common to Medical Imaging}
+\subsection{Methods Pertinent to Anomaly Detection in Medical Imaging}
+
+Often what works for natural images, is not directly translatable to medical imaging. For one, medical imaging modalities such as Magnetic Resonance Imaging (MRIs) and Computerized Tomography (CT) are three dimensional by design. Thus, models designed for 2D natural images are not applicable to medical scans. It is possible to apply these models to each 2D slice individually. \tempcite{2.5D}
+However, in doing so, the model forgoes a lot of context from the interdependence of neighbouring slices. As the data is 3D, so should the model. 
+
+% However, the downside of using 3D architectures is that we lose out on models that have been pretrained on massive natural image datasets such as ImageNet \temcite{imagenet}. Pretrained models have often learned useful priors (at minimum simple shapes such as edges) and converge faster for most downstream tasks when compared to training-from-scratch \tempcite{facebook} 
+
+
+- Models require more compute and memory resources
+- This makes them difficult to train as experimentation and hyperparameter search is time consuming and cost prohibitive
+- Many deep learning models benefit from larger batch sizes or longer training times
+ - which is difficult for memory intensive 3D models
+
+therefore, there is an observable shift in the types of approaches that are dominant in the 3D medical domain. They are usually more straight-forward and lag a year or two behind the bleeding edge research in 2D computer vision.
+
+The most successful anomaly detetction models are based on autoencoders.
+
+\tempcite{BAUR} gives a thorough overview on anomaly detectors.
+They note that there was no clear winner as no single method definitively outperformed the rest.
+
