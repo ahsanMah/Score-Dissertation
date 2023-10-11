@@ -2,11 +2,29 @@
 
 \section{Motivation}
 
-Anomaly detection in medical images is an active area of research with many potential benefits for healthcare. Identifying anomalies in images such as MRI scans can assist clinicians in detecting conditions earlier and initiating treatment more rapidly. However, anomaly detection faces considerable challenges, especially in domains where labeled data is scarce, and normal anatomy exhibits high inter-subject variability.
+Anomaly detection in medical images is an active area of research with many potential benefits for healthcare. Identifying anomalies in images such as MRI scans can assist clinicians in detecting conditions earlier and initiating treatment more rapidly. Further, automating the detection of pathologies can help reduce error rates. For instance, it is estimated that radiologists can miss a relevant pathology in 5-10\% of scans~\cite{bruno_understanding_2015}. Of these medical errors, 60-80\% could be explained by "perceptual errors" i.e. a finding is present on the image but is missed. Recent breakthroughs in deep learning have demonstrated tremendous abilities in detecting pathologies such as tumors and lesions~\cite{kim_deep_2019,lee_deep_2017}. It is easy to envision deep learning models as augmenting the diagnostic abilities of medical practitioners and reducing error rates.
 
-[mention unsupervised]Traditional machine learning methods often fail to identify anomalies amidst diverse normal variations.
+%show MOOD gorrilla and bruno coin..?
 
-Recent methods based on denoising score matching provide a promising solution. By estimating the score (gradient of the log-density), score matching enables precise quantification of how likely samples are under the data distribution without requiring anomalous samples for training. Conceptually, a score is a vector field that points in the direction where the likelihood increases the most. In the context of anomaly detection in medical imaging, score matching offers a powerful, yet under-explored, tool to discern pathological patterns from normal variations.
+However, most existing pathology detectors are trained using labeled data (supervised training). Collecting labels for anomalous data is time consuming, cost prohibitve, and requires multiple expert human annotators.  Furthermore, anomalies are unpredictable by definition. In medical imaging, anomalies can exhibit themselves in various forms such as physical pathologies (e.g. tumors and lesions), image acquisition artefacts (e.g. noise caused by motion during a scan), or anatomical deviations caused by non-pathological sources such as age or neural divergences.
+This makes it impractical to to ascertain the entire set of possible anomalies and collect data apriori.
+
+In response to the dearth of labelled data, progress has been made towards developing unsupervised anomaly detectors~\cite{tschuchnig_anomaly_2022,baur_deep_2019}. These models are trained on unlabeled images representative of a normal/typical population.
+However, meta-analyses have revealed that there is no clear winner in this space~\cite{baur2021}~\tempcite{UNIFYING}. Models behave inconsistently across different pathologies and there does not seem to be clear correlation between model complexity and detection performance. Another common shortcoming of these models is often the training objective itself, which tend to be tangentially related to anomaly detection.
+
+\subsection*{Autoencoders Do Not Make Good Anomaly Detectors}
+% an example of tagetial
+An overwhelming majority of the models are based on some flavor of the autoencoding objective i.e. the model is tasked to reproduce the input image. The assumption is that, having only seen typical samples during training, the autoencoder will fail reconstruct anomalies. If this assumption holds, then one can use reconstruction errors as anomaly scores. However, we can foresee a paradox underlying this assumption. As the performance of the autoencoders increases, i.e. its reconstruction capabilities improve, its anomaly detection will decrease. This is exactly what we observe in practice, where well-trained autoencoders learn to reconstruct anomalies with ease. Researchers thus try to limit the performance capabilities by including regularization schemes into the objective so that the autoencoder is performant \textit{only} on inlier data and fails to generalize to other datasets. I argue that these constraints are ad-hoc solutions for an inappropriate objective. We need the training objective itself to more closely align with learning typicality. 
+
+\subsection*{the curious failure of likelihood models}
+
+%%%
+% \todo{show pic of reproducng anonmalies and failure of likeiloohd methods}
+%%%
+
+\subsection*{Scores are a Useful Proxy to Likelihood}
+
+In this thesis I will develop a case for a particular methodology, called denoising score matching, as a promising solution to unsupervised anomaly detection. By estimating the score (gradient of the log-density), score matching enables precise quantification of how likely samples are under the data distribution without requiring anomalous samples for training. Conceptually, a score is a vector field that points in the direction where the likelihood increases the most. In the context of anomaly detection in medical imaging, score matching offers a powerful, yet under-explored, tool to discern pathological patterns from normal variations.
 
 I posit that a multiscale analysis of score estimates can effectively identify anomalies stemming from multiple underlying factors. In this research I interpret "mutliscale" to be multiple noise levels of perturbation.
 Intuitively, higher noise levels obscure local information forcing the model to learn more global patterns. 
@@ -15,7 +33,7 @@ By utilizing multiple noise levels during training, both global and local contex
 
 This multiscale capacity is particularly beneficial for anomaly detection in medical images, where anomalies may manifest in localized textures or global shape.
 
-Note that the idea of using gradients of the log density  as a means of outlier detection has been done in the past, most notably by \tempcite{yourClassifier,energyOOD}. However, neither work connected the idea to score matching. 
+Note that the idea of using gradients of the log density  as a means of outlier detection has been done in the past, most notably by \tempcite{yourClassifier,energyOOD}. However, a bit surprisingly, neither work explicitly connected the idea to score matching. 
 -> the first only considered ood detexction briefly and observed middling results
 
 -> the latter chnaced upon the gradient norms while exploring  energy-based models for outlier detection.
