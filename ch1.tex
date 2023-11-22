@@ -6,8 +6,7 @@ In this chapter, I will outline the main idea behind Multiscale Score Matching A
 \section{Multiscale Score Analysis}
 
 Consider taking the L2-norm of the score function:
-$ \norm{ s(x) } = \norm{ \nabla_{x} \log p(x)  } = \norm{ \frac{\nabla_{x}\text{~}p(x)}{p(x)} } $.
-One can ask the question: Is the norm of a score function sufficient to identify samples with low density $p(x)$?
+$ \norm{ s(x) } = \norm{ \nabla_{x} \log p(x)  } = \norm{ \frac{\nabla_{x}\text{~}p(x)}{p(x)} } $. Is the norm of a score function sufficient to identify samples with low density $p(x)$?
 
 Since the data density term appears in the denominator, a high likelihood will correspond to a low norm. In contrast, out-of-distribution samples should have a low likelihood with respect to the in-distribution log density (i.e. $p(x)$ is small), and we can expect them to have high score norms. However, if these outlier points reside in ``flat" regions with very small gradients (or perhaps in a local mode),  their score norms can be low despite the point belonging to a low density region. 
 \figref{fig:toy_gmm} illustrates a possible scenario of outlying points.

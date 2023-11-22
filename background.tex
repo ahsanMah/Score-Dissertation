@@ -2,7 +2,7 @@
 
 \section{Score Matching}
 Recall that a score is defined as the gradient of the log probability density, with respect to the data. Conceptually, a score is a vector field that points in the direction where the log density grows the most. 
-\tempcite{Hyvernan} introduced score matching as a means of computing the parameters of an unnormalized probability density models. The authors proved the remarkable property that learning the score involves the gradient of the score function itself as shown in Equation~\ref{eq:implicit_sm}. I will follow the naming scheme used in \tempcite{Vincent} and name this objective as Implicit Score Matching.
+\cite{hyvarinen2005} introduced score matching as a means of computing the parameters of an unnormalized probability density models. The authors proved the remarkable property that learning the score involves the gradient of the score function itself as shown in Equation~\ref{eq:implicit_sm}. I will follow the naming scheme used in \tempcite{Vincent} and name this objective as Implicit Score Matching.
 
 \begin{align}
 \label{eq:implicit_sm}
@@ -74,7 +74,7 @@ Examples include Gaussian Mixture Models (GMMs)~\cite{reynolds2009gaussian} and 
 
 There are many deep generative models that allow for the estimation of probability densities. 
 
-\textbf{Autoregressive} models such as Glow and PixelCNN (and their earlier counterparts, NADE and MADE) allow direct access to density estimates. However, \tempcite{Nalisnick} showed that deep likelihood models often fail to detect out-of-distribution samples.
+\textbf{Autoregressive} models such as Glow and PixelCNN (and their earlier counterparts, NADE and MADE) allow direct access to density estimates. However, \cite{nalisnick2018do} showed that deep likelihood models often fail to detect out-of-distribution samples.
 
 \textbf{Normalizing flow models} and failure
 
@@ -90,7 +90,7 @@ ECOD~\cite{li_ecod_2022} uses a different notion of density and estimates the cu
     \item Energy
 \end{itemize}
 
-\subsection{Restoration based}
+\subsection{Restoration based} 
 
 \subsection{One-Class Objectives}
 
