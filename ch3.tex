@@ -1,0 +1,50 @@
+\chapter{Localizing Anomalies via Patch-based MSMA}
+\label{ch:localizing}
+
+It is often desirable to interpret the outputs of deep learning models and reason about the parameters that influence a particular prediction. For instance, in healthcare, interpretation can allow medical practitioners 
+to visually verify the regions in an image that contributed to the model's decision. Not only could this information be used for follow-up tests but, it may also aid in deriving novel biological insights about the nature of the disease. Therefore, one subtask of detecting anomalous images, is to identify the anomalous patches within an image.
+
+In this chapter, I will expand on the techniques that build the backbone of Local-MSMA. for localizing anomalies in an image. Note that localization allows for the possibility of detecting physical pathologies directly. For example, my work shows that Local-MSMA has the capabilities of highlighting brain regions with lesions even though it was never trained with any labels. This benefit is orthogonal to the exploratory insights gained through interpretability.
+
+\section{Existing Techniques for Localization}
+
+\subsection*{Attribution-based Approaches}
+These techniques draw on the insights of interpretability research. The task is to identify features of the data that contribute to the model's output. The identified features are often assigned a score relative to their importance, as determined by the rules of the interpretation technique. Examples of such methods include LIME, SHAP, Saliency Maps, and GradCAM.
+
+
+\section*{A Patch-Based Approach}
+The basic assumption of MSMA is that inliers will occupy distinct regions in the score-norm space. At test time, we ask the question: Does this sample belong to the inliers? MSMA consequently gives an estimate of the likelihood of a sample belonging to the inlier region. 
+
+Up until this chapter we have looked at the data samples holistically, and considered the entire subset of features available to us. However, MSMA is also amenable for subsets of features. For instance, we may divide an image into patches and consider the score-norms of each patch independently. Now we can ask the question: Does this \textit{patch} belong to the inliers? As before, MSMA can give us a likelihood estimate of a test patch belonging to the inliers, but this time considering \textit{only} the given patch location.
+
+Extending MSMA to consider patches at a time is straight forward. One can decompose the image into a regular grid, and train an independent MSMA model for each grid location. This may sound computationally expensive but, training/inference could be done in parallel for each patch location.
+
+
+
+\subsection*{Image Patches are Not Independent of Each Other}
+However, the vanilla approach has its downsides. Namely, we cannot ignore that neighbouring image patches are highly correlated with each other. Further, we cannot even claim that patches which are spatially apart do not depend on each other. Consider how in an image of a face, observing the patches corresponding to the left ear will give us information about what we may observe in the rest of the image. This gives an impetus for a conditional model where the position of the patch and its surrounding context are taken into account.
+
+\subsection*{Modeling Conditional Likelihoods}
+
+Therefore, in order to construct a patch-based MSMA detector, I need to incorporate a conditional likelihood model. The conditioning information will be the patch position and the image context. Let $ s_p = \{s(x_p)\}_{i=1}^{L}$ be the multi-scale score tensor for a given patch $x_p$ at location $p$, belonmging to the image $x$. I propose to estimate the conditional likelihood model $p(s_p | p, x)$. 
+
+In my work I use a flexible class of likelihood estimators called normalizing flows introduced in Chapter~\ref{ch:background}. The patch locations are modeled via sinusoidal positional embeddings, commonly used in Transformer models~\cite{vaswani}. In order to capture global details, the original image is passed through a convolutional network with a large receptive field. The image feature embeddings are concatenated with the positional embeddings and fed into the flow model as contextual information .
+
+\section{Prototyping on 2D Images}
+
+To develop my methodology, I focused on the task of segmenting anomalies in 2D images. I opted to go this route due to publicly available benchmark datasets and pretained models. This helped me refine my model architecture and compare my model's performance to alternatives.
+
+I used the MvTec anomaly detection dataset\tempcite{MVTEC}. This dataset focuses on industrial inspection and comprises of a set of defect-free training images and a test set of images with various kinds of manufacturing defects. The test set includes high resoluton segmentation maps which allow us to validate the performance of the anomaly detection model. Note that the difficulty of this task stems from its unsupervised nature. At training time, the model will only see typical images and it cannot assume anything about the defects at the testing stage.
+
+To train my patch-based MSMA model, I utilize a two-stage training scheme as with vanilla MSMA, where I first train a score matching model and then a likelihood model on the score norms. The difference now is that the downstream likelihood model will be trained on score norms of patches rather than whole images.
+
+For training the score-matching model in the first stage, I finetuned a publicly available checkpoint of a score-based diffusion model pretrained on the CIFAR-10 dataset. Next, the score model is kept frozen and I train a normalizing flow on the score norms for each patch, where the patch size is kept as a hyper parameter. The flow model also receives the positional embeddings and the feature representations of the original image as context. Once the flow model is trained, we can evaluate it on every patch location in the image in a sliding-window fashion. The resulting image will be a likelihood heatmap, which I invert to get the anomaly heatmap (negative log-likeihood).
+
+To evaluate the anomaly detection eprfoermacne of this apporach, I compare my results to that of the origiabnl aughtors of the MvTec dataset~\cite{bergmann2020uninformed}. I compute the per-region overlap metric that the MvTec authors introduced in their work, which is a measures the overlap between connected components in the ground truth and the anomaly map for every threshold. Even without any complex hyperparameter tuning, MSMA is able to outperform the baseline by 10\% for the same patch size(.741 PRO-AUC vs .671 PRO-AUC).
+
+
+\section{Application to Brain MRIs}
+
+\subsection{Tumor Detection}
+
+\subsection{Lesion Detection}

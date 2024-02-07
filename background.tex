@@ -1,4 +1,5 @@
 \chapter{Background and Prior Work}
+\label{ch:background}
 
 \section{Score Matching}
 Recall that a score is defined as the gradient of the log probability density, with respect to the data. Conceptually, a score is a vector field that points in the direction where the log density grows the most. 
@@ -37,6 +38,7 @@ I emphasize that while the \cite{vincent2011connection} and many subsequent work
 I will make use of this fact when deriving a score matching objective for categorical data in Chapter~\ref{ch:gnsm}.
 
 \subsection*{Noise Conditioned Score Matching}
+\label{NCSM}
 
 \cite{Song2019} extended the DSM objective in \eqnref{eq:denoising_sm} to incorporate multiple scales $\sigma$, and train a so-called Noise Conditioned Score Network (NCSN). The authors further outlined an iterative sampling algorithm, dubbed annealed Langevin dynamics, enabling the score network to be employed as a deep generative model. Let $\{\sigma_i\}_{i=1}^L$ be a positive geometric sequence that satisfies $\frac{\sigma_1}{\sigma_2} = ... = \frac{\sigma_{L-1}}{\sigma_{L}} >  1$. NCSN is a conditional network, $s_{\theta}(x,\sigma)$, trained to jointly estimate scores for various levels of noise $\sigma_i$ such that $\forall \sigma \in \{\sigma_i\}_{i=1}^L: s_{\theta}(x,\sigma) \approx \nabla_x \log q_{\sigma}(x)$. In \cite{Song2019}, the conditioning information is explicitly provided via a one-hot vector denoting the noise level used to perturb the data. The network is then trained via a modified denoising score matching objective as shown in \eqnref{eq:ncsn_dsm}.
 \begin{equation}
