@@ -235,7 +235,7 @@ As such, in my testing, no one method definitively outperforms the rest; an outc
 In this context, I emphasize that GNSM consistently ranks high across all datasets tested. In contrast, each of the competing methods were the top performer in only one of the datasets in Table~\ref{tabular_results}, and significantly underperformed in others. Averaged over all datasets, GNSM performs best. This is empirical confirmation that GNSM is a consistent contender in the suite of available algorithms for practitioners looking to detect anomalies in unlabeled data domains.
 
 \section{Case Study: Detecting Segmentation Failures}
-
+\label{cat-seg-study}
 I designed this case study to demonstrate how GNSM may be applied to a real world use case of detecting anomalous segmentation masks.
 The task here is to learn the distribution of ground truth image-segmentation pairs. At inference time, GNSM-MSMA will score the outputs of a pretrained segmentation model. My hypothesis is that GNSM will correctly detect failure cases i.e. poor segmentations will be ranked higher on the anomaly scale.
 
