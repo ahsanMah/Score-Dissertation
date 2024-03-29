@@ -2,13 +2,37 @@
 
 \section{Motivation}
 
-Anomaly detection in medical images is an active area of research with many potential benefits for healthcare. Identifying anomalies in images such as MRI scans can assist clinicians in detecting conditions earlier and initiating treatment more rapidly. Further, automating the detection of pathologies can help reduce error rates. For instance, it is estimated that radiologists can miss a relevant pathology in 5-10\% of scans~\cite{bruno_understanding_2015}. Of these medical errors, 60-80\% could be explained by "perceptual errors" i.e. a finding is present on the image but is missed. Recent breakthroughs in deep learning have demonstrated tremendous abilities in detecting pathologies such as tumors and lesions~\cite{kim_deep_2019,lee_deep_2017}. It is easy to envision deep learning models as augmenting the diagnostic abilities of medical practitioners and reducing error rates. 
+Anomaly detection is an active area of research with many potential benefits for healthcare, manufacturing, and financial industries. While the specific realization of an anomaly will vary across applications, they term usually refers to samples that are rare and markedly different from the average.
+
+In healthcare, anomalies exhibit themselves as medical pathologies such as lesions and tumors. In  manufacturing industries, anomalies may be defective objects in the manufacturing process. In finance, fraudulent transactions, system misuse, and suspicious activity in the networking systems are common examples of anomalies. Figure~\ref{fig:anoex} gives pictorial examples of the types of anomalies that may be observed across industries.
+
+\begin{figure}[bhp]
+\centering
+% \begin{subfigure}[t]{0.6\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/anomaly_examples.png}
+    \caption{Examples of anomalies across different industries. In all cases, anomalies are unexpected and undefined deviations from the norm, making them difficult to predict apriori.}
+    \label{fig:anoex}
+
+\end{figure}%
+
+\subsection*{Detecting Anomalies in Medical Imaging}
+
+Identifying anomalies in images such as MRI scans can assist clinicians in detecting conditions earlier and initiating treatment more rapidly. Further, automating the detection of pathologies can help reduce error rates. For instance, it is estimated that radiologists can miss a relevant pathology in 5-10\% of scans~\cite{bruno_understanding_2015}. Of these medical errors, 60-80\% could be explained by "perceptual errors" i.e. a finding is present on the image but is missed. Recent breakthroughs in deep learning have demonstrated tremendous abilities in detecting pathologies such as tumors and lesions~\cite{kim_deep_2019,lee_deep_2017}.
+
+There is much enthusiasm in productionizing these deep learning models in the clinical setting to augment the diagnostic abilities of medical practitioners and reducing error rates. Currently, some companies have deployed AI models for clinical use-cases~\cite{CHAMBERLIN2023e368}, albeit with limited success. Studies have shown that these models tend to trade-off false positives for higher sensitivity of detection~\cite{niehoffEvaluationClinicalPerformance2023}. As such, they are more reliable for their negative prediction properties i.e. clinicians may use the model to increase trust in their own assessments if the model also does not discover any pathologies. Furthermore, these models are trained in a supervised manner and can only detect the specific abnormalities included in training. This leaves much room for research into developing general purpose anomaly detectors  and improving their false-detection rates.
+
+Note that while this thesis will ultimately focus on the medical imaging application, the methodology presented in this work is general-purpose. One can easily adapt the proposed deep learning model to any application as well as any data modality~\footnote{With the exception of text as it may require nontrivial modifications to the underlying model and training objective}.
+
+
+
+
 
 %TODO: show MOOD gorrilla and bruno coin..?
 
 \subsection*{The Case for Unsupervised Models}
 
-However, most existing pathology detectors are trained using labeled data (supervised training). Collecting labels for anomalous data is time-consuming, cost-prohibitive, and requires multiple expert human annotators.  Furthermore, anomalies are unpredictable by definition. In medical imaging, anomalies can exhibit themselves in various forms such as physical pathologies (e.g. tumors and lesions), image acquisition artifacts (e.g. noise caused by motion during a scan), or anatomical deviations caused by non-pathological sources such as age or neural divergence.
+Most existing pathology detectors are trained using labeled data (supervised training). Collecting labels for anomalous data is time-consuming, cost-prohibitive, and requires multiple expert human annotators.  Furthermore, anomalies are unpredictable by definition. In medical imaging, anomalies can exhibit themselves in various forms such as physical pathologies (e.g. tumors and lesions), image acquisition artifacts (e.g. noise caused by motion during a scan), or anatomical deviations caused by non-pathological sources such as age or neural divergence.
 This makes it impractical to predetermine the entire set of possible anomalies and collect data apriori.
 
 In response to the dearth of labeled data, progress has been made towards developing unsupervised anomaly detectors~\cite{bergmann2020uninformed,baur_deep_2019,ruff_unifying_2021}. These models are trained on unlabeled images representative of a normal/typical population.
@@ -16,7 +40,7 @@ However, meta-analyses have revealed that there is no clear winner in this space
 
 \subsection*{Autoencoders Do Not Make Good Anomaly Detectors}
 % an example of tagetial
-An overwhelming majority of the models are based on some flavor of the autoencoding objective \cite{baur_deep_2019,baur2021,tschuchnig_anomaly_2022,kascenasRoleNoiseDenoising2023} i.e. the model is tasked to reproduce the input image. The assumption is that, having only seen typical samples during training, the autoencoder will fail to reconstruct anomalies. Consequently, one can use reconstruction errors as anomaly scores. However, we can foresee a paradox underlying this assumption. As the performance of the autoencoder increases, its reconstruction capabilities will improve, which causes it to become a poorer anomaly detector. This is exactly what we observe in practice, where well-trained autoencoders learn to reconstruct anomalies with ease. Researchers thus try to limit the performance capabilities by including regularization schemes into the objective so that the autoencoder is performant \textit{only} on inlier data and fails to generalize to other datasets. I argue that these constraints are ad-hoc solutions for an inappropriate objective. We need the training objective itself to be more closely aligned with learning typicality. 
+An overwhelming majority of anomaly models are based on some flavor of the autoencoding objective \cite{baur_deep_2019,baur2021,tschuchnig_anomaly_2022,kascenas2023} i.e. the model is tasked to reproduce the input image. The assumption is that, having only seen typical samples during training, the autoencoder will fail to reconstruct anomalies. Consequently, one can use reconstruction errors as anomaly scores. However, one can foresee a paradox underlying this assumption. As the performance of the autoencoder increases, its reconstruction capabilities improve, and it is able to generalize to unseen data. This implies that a performant autoencoder will be a poor anomaly detector., which is exactly what we observe in practice. Well-optimized autoencoders learn to reconstruct anomalies with ease. Researchers thus try to limit the performance capabilities by including regularization schemes into the objective so that the autoencoder is performant \textit{only} on inlier data and fails to generalize to other datasets. I argue that these constraints are ad-hoc solutions, and that the objective itself is inappropriate for the task. We need the training objective to be more closely aligned to learning typicality. 
 
 \begin{figure}[tbhp]
 % \label{fig:failures}
@@ -40,13 +64,13 @@ An overwhelming majority of the models are based on some flavor of the autoencod
 % \end{subfigure}
 \end{figure}
 
-Likelihood models are a natural candidate for anomaly detection. In fact, most definitions of the term `anomaly" invoke some flavor of probability. Further still, in the past decade, there have been many exciting advances in deep likelihood models such as PixelCNN, Glow, and an explosion of an entire class of so-called normalizing flow models.
+Likelihood models are a natural candidate for anomaly detection. In fact, most definitions of the term `anomaly" invoke concepts related to probability. In the past decade, there have been many exciting advances in deep likelihood models such as PixelCNN, Glow, and an explosion of an entire class of so-called normalizing flow models.
 
 These methods will estimate the probability densities of the samples with respect to a training distribution. A high probability density is an indication that the data point belongs to a set of samples that are likely to occur.
 Conversely, out-of-distribution (OOD) samples will tend to reside in low-density probability regions.
 
 
-So why not use deep likelihood models for anomaly detection? While these models often demonstrate exceptional generative capabilities, they frequently fail at detecting outlying samples. In fact, they often assign \textit{higher} likelihood to OOD samples. This curious failure of OOD detection has been extensively reported \cite{nalisnick2018do,why_norm_fails,nalisnick2020detecting} but has yet to be fully understood.
+So why not use deep likelihood models for anomaly detection? While these models often demonstrate exceptional generative capabilities, they frequently fail at detecting outlying samples. Paradoxically, they often assign \textit{higher} likelihood to OOD samples. This curious failure of OOD detection has been extensively reported \cite{nalisnick2018do,why_norm_fails,nalisnick2020detecting} but has yet to be fully understood.
 
 Some candidate explanations point to the overfitting of models to low-level features in the images. Of course, this argument only holds for vision models, whereas to my knowledge, the failure of deep likelihood models is agnostic to the data modality.
 
@@ -60,12 +84,12 @@ Researchers prescribing to this school-of-thought argue that high dimensional pr
 
 \section{Score-Matching for Predicting Anomalies}
 
-In this thesis, I will develop a case for a particular methodology, called denoising score matching, as a promising solution to unsupervised anomaly detection. By estimating the score (gradient of the log-probability-density), score matching estimates how far a given data point is from the data distribution. Conceptually, a score is a vector field that points in the direction where the likelihood increases the most. In the context of anomaly detection in medical imaging, score matching offers a powerful, yet under-explored, tool to discern pathological patterns from normal variations.
+In this thesis, I will develop a case for a particular methodology, called denoising score matching, as a promising solution to unsupervised anomaly detection. A \textit{score} is defined as the gradient of the log-probability-density with respect to the data. Conceptually, a score is a vector field that points in the direction where the likelihood increases the most. Score matching is a technique that is utilized to estimate this vector. In doing so, score matching estimates how far a given data point is from the data distribution. In the context of anomaly detection, score matching offers a powerful, yet under-explored, tool to discern pathological patterns from normal variations.
 
-I posit that a multi-scale analysis of score estimates can effectively identify anomalies stemming from multiple underlying factors. In this research, I interpret "multi-scale" to imply multiple noise levels of perturbation. Intuitively, higher noise levels obscure local information, forcing the model to learn more global patterns. Therefore, by utilizing multiple noise levels during training, both global and local contextual features can be captured. This multi-scale capacity is particularly beneficial for anomaly detection in medical images, where anomalies may manifest as localized textures or as large-scale structures.
+I posit that a multi-scale analysis of score estimates can effectively identify anomalies stemming from multiple underlying factors. In this research, ``multi-scale" refers to the multiple levels of noise that are used to perturb the data. Intuitively, higher noise levels obscure local information, forcing the model to learn more global patterns. Therefore, by utilizing multiple noise levels during training, both global and local contextual features can be captured. This multi-scale capacity is particularly beneficial for anomaly detection in medical images, where anomalies may manifest as localized textures or as large-scale structures.
 
 
-Note that the idea of using gradients of the log density as a means of outlier detection has been done in the past, most notably by \cite{Grathwohl2020Your, pmlr-v48-zhai16}. However, a bit surprisingly, neither work explicitly connected their ideas to score matching. \cite{Grathwohl2020Your} described the norm of the gradient of the log-density as "Approximate Mass", obtained from an Energy-Based Model (EBM). The authors even noted how the Approximate Mass predictor greatly outperformed likelihoods for the OOD task but did not explore the idea further. Their work can be considered as special-case of my proposed method: a single scale score estimator trained with sufficiently low noise would be estimating the gradient norms of the true log density. I will note that my technique significantly outperforms Approximate Mass, as reported in~\cite{mahmood2021multiscale}. \cite{pmlr-v48-zhai16} chanced upon gradient norms while exploring energy-based models for outlier detection. They correctly identified how reconstruction errors obtained via an energy-based model would correspond to the gradient of the log density. However, they did not see an improvement over simply using the energy scores. I posit that they too would have seen improvements by adopting a multi-scale approach. 
+Note that the idea of using gradients of the log density as a means of outlier detection has been done in the past, most notably by~\cite{Grathwohl2020Your} and~\cite{pmlr-v48-zhai16}. However, a bit surprisingly, neither work explicitly connected their ideas to score matching. \cite{Grathwohl2020Your} described the norm of the gradient of the log-density as "Approximate Mass", obtained from an Energy-Based Model (EBM). The authors even noted how the Approximate Mass predictor greatly outperformed likelihoods for the OOD task but did not explore the idea further. Their work can be considered as special-case of my proposed method i.e. as a single-scale score estimator trained with sufficiently low noise would be estimating the gradient norms of the true log density. I will note that my technique significantly outperforms Approximate Mass, as reported in~\cite{mahmood2021multiscale}. \cite{pmlr-v48-zhai16} chanced upon gradient norms while exploring energy-based models for outlier detection. They correctly identified how reconstruction errors obtained via an energy-based model would correspond to the gradient of the log density. However, they did not see an improvement over simply using the energy scores. I posit that they too would have seen improvements by adopting a multi-scale approach. 
 
 To my knowledge, my work has been the first to explore anomaly detection from the perspective of score matching. This thesis is also the first to empirically underscore the effectiveness of multiple noise scales for this task.
 
@@ -74,7 +98,7 @@ To my knowledge, my work has been the first to explore anomaly detection from th
 As of yet, there is no standard definition of the term anomaly. 
 For the purpose of my research, I will opt for a fairly loose definition of the term: any data point that does not belong to the typical set. That is, an anomaly is a sample with low probability \textit{mass}, with respect to the distribution described by the training data. 
 
-Note that the diversity of my training samples will always be a limiting factor for the anomaly detection performance. It is very possible to encounter samples that human experts will categorize as typical but may seem out-of-distribution to a model trained on limited data. This is an inherent limitation of all learning technique, and one should be mindful of such limitations.
+Note that the diversity of my training samples will always be a limiting factor for the anomaly detection performance. It is very possible to encounter samples that human experts will categorize as typical but may seem out-of-distribution to a model trained on limited data. This is an inherent limitation of all learning techniques, and one should be mindful of such limitations.
 
 \section{Thesis Statement}
 

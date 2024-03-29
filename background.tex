@@ -2,8 +2,8 @@
 \label{ch:background}
 
 \section{Score Matching}
-Recall that a score is defined as the gradient of the log probability density, with respect to the data. Conceptually, a score is a vector field that points in the direction where the log density grows the most. 
-\cite{hyvarinen2005} introduced score matching as a means of computing the parameters of an unnormalized probability density model. The authors proved the remarkable property that learning the score involves the gradient of the score function itself as shown in Equation~\ref{eq:implicit_sm}. I will follow the naming scheme used in \cite{vincent2011connection} and call this objective as Implicit Score Matching.
+A score is defined as the gradient of the log probability density, with respect to the data. Conceptually, a score is a vector field that points in the direction where the log density grows the most. 
+\cite{hyvarinen2005} introduced score matching as a means of computing the parameters of an unnormalized probability density model. The authors proved the remarkable property that learning the score involves the gradient of the score function itself as shown in Equation~\ref{eq:implicit_sm}. Following the naming scheme used in \cite{vincent2011connection}, this objective is called Implicit Score Matching.
 
 \begin{align}
 \label{eq:implicit_sm}
@@ -14,9 +14,7 @@ Recall that a score is defined as the gradient of the log probability density, w
 
 \subsection*{Denoising Score Matching}
 
-\cite{vincent2011connection} formalized a connection between denoising autoencoders and score matching, and proposed the denoising score matching (DSM) objective.
-
-The authors noted how \cite{hyvarinen2005} had suggested the possibility of an alternate score matching objective; one that was based on regressing against the data gradients of a Parzen window density estimator. This so-called Explicit Score Matching objective is shown in \eqnref{eq:explicit_sm}.
+\cite{vincent2011connection} formalized a connection between denoising autoencoders and score matching, and proposed the denoising score matching (DSM) objective. The authors noted how \cite{hyvarinen2005} had suggested the possibility of an alternate score matching objective; one that was based on regressing against the data gradients of a Parzen window density estimator. This so-called Explicit Score Matching objective is shown in \eqnref{eq:explicit_sm}.
 
 \begin{align}
 \label{eq:explicit_sm}
@@ -32,9 +30,9 @@ Taking it one step further, assume the Parzen density estimate is chosen to esti
     J_{DSM}(\theta) &= \mathbb{E}_{\tilde{x}\sim q_{\sigma}(x, \tilde{x})} \frac{1}{2} \s{ \norm{s_\theta(\tilde{x}) - \nabla_{\tilde{x}} \log q_{\sigma}(x | \tilde{x}) }^2 }
 \end{align}
 
-DSM mitigates the need for computing second order gradients as is the case for \eqnref{eq:implicit_sm}. Furthermore, if $q_{\sigma}$ is set as the Gaussian kernel $\mathcal{N}(\tilde{x} |  x,\,\sigma^{2}I)$, then $\nabla_x \log q_{\sigma}(\tilde{x}) = \frac{(x - \tilde{x})}{\sigma}$. One can now see the connection between score matching and the denoising autoencoder objective (when using a Gaussian kernel) as the score model is effectively being trained to estimate the noise that was added to the image.
+DSM mitigates the need for computing second order gradients as is the case for \eqnref{eq:implicit_sm}. Furthermore, if $q_{\sigma}$ is set as the Gaussian kernel $\mathcal{N}(\tilde{x} |  x,\,\sigma^{2}I)$, then $\nabla_x \log q_{\sigma}(\tilde{x}) = \frac{(x - \tilde{x})}{\sigma}$. One can now see the connection between score matching and the denoising autoencoder objective (When using a Gaussian kernel). The score model is effectively being trained to estimate the \textit{noise} that was added to the image.
 
-I emphasize that while the \cite{vincent2011connection} and many subsequent works \cite{Song2019,song2020improved,song2020score}, use the Gaussian distribution in DSM, the proof for the validity of the objective by \cite{vincent2011connection} holds for \textit{any} differentiable noise distribution.
+It should be emphasized that while~\cite{vincent2011connection} and many subsequent works \cite{Song2019,song2020improved,song2020score}, use the Gaussian distribution in DSM, the proof for the validity of the objective by~\cite{vincent2011connection} holds for \textit{any} differentiable noise distribution.
 I will make use of this fact when deriving a score matching objective for categorical data in Chapter~\ref{ch:gnsm}.
 
 \subsection*{Noise Conditioned Score Matching}
@@ -51,43 +49,34 @@ I will make use of this fact when deriving a score matching objective for catego
 
 \subsection*{Connecting Score Matching to Diffusion Models}
 
-In a follow-up work, \cite{song2020score} described a connection between noise-conditioned score matching and diffusion models \cite{sohl2015deep}. The connection is presented under the lens of generative modeling, and provides a framework which unifies Markov-based and continuous-time diffusion models. The key insight is that successive perturbation of a data point using a scale-dependent noise distribution (as done in NCSNs), follows a Stochastic Differential Equation (SDE). Thus, the `forward' diffusion process can be modeled as an SDE. If one has access to the scores at each time point, it is possible to construct a reverse-time SDE as proved by \cite{anderson1982reverse}. These reverse-SDEs can be numerically solved using any differential equation solver, only requiring access to the score function. The authors were able to use this formulation to generate images that surpassed the state-of-the-art generative models. This work was seminal in the development of future diffusion models.
+In a follow-up work,~\cite{song2020score} described a connection between noise-conditioned score matching and diffusion models~\cite{sohl2015deep}. The connection is presented under the lens of generative modeling, and provides a framework which unifies Markov-based and continuous-time diffusion models. The key insight is that successive perturbation of a data point using a scale-dependent noise distribution (as done in NCSNs), follows a Stochastic Differential Equation (SDE). Thus, the `forward' diffusion process can be modeled as an SDE. If one has access to the scores at each time point, it is possible to construct a reverse-time SDE as proved by~\cite{anderson1982reverse}. These reverse-SDEs can be numerically solved using any differential equation solver, only requiring access to the score function. The authors were able to use this formulation to generate images that surpassed the state-of-the-art generative models. This work was seminal in the development of future diffusion models.
 
 \subsection*{Continuous-Time Score Matching}
-More relevant to my research, \cite{song2020score} enabled a continuous relaxation to the discretized nature of noise conditioned score matching. Defining the noising process as a continuous forward SDE alleviates the need to predetermine the number of noise scales (as was the case for NCSN models). For generative models, this translates to faster sampling as one can control the number of gradient steps to take. For my research, it gives me the ability to observe different noise scales at test time while maintaining the advantages of using multiple noise scales during training. Namely, it forces the model to learn smoother transitions between noise scales, which helps test time generalizability.
+More relevant to this research,~\cite{song2020score} enabled a continuous relaxation to the discretized nature of noise conditioned score matching. Defining the noising process as a continuous forward SDE alleviates the need to predetermine the number of noise scales (as was the case for NCSN models). For generative models, this translates to faster sampling as one can control the number of gradient steps to take. For my research, it gives me the ability to observe different noise scales at test time while maintaining the advantages of using multiple noise scales during training. Namely, it forces the model to learn smoother transitions between noise scales, which helps test time generalizability.
 
 \section{Anomaly Detection}
 
-For this thesis, I will specifically focus on \textit{unsupervised} anomaly detection. A myriad of methods have been proposed to tackle this problem \cite{pang_deep_2021,ruff_unifying_2021}, with varying success~\cite{han2022adbench}. This section provides a summary of some methodologies relevant to my research.
+This thesis will specifically focus on \textit{unsupervised} anomaly detection. A myriad of methods have been proposed to tackle this problem \cite{pang_deep_2021,ruff_unifying_2021}, with varying success~\cite{han2022adbench}. The following sections provide a summary of some methodologies relevant to my research.
 
 \subsection{Probability-based}
 
 Many methods incorporate some form of likelihood or probability density estimation \tempcite{ANOLIKE}. 
 
 \subsubsection*{Density}
-Perhaps the most straight-forward paradigm for detecting anomalous samples is to use the probability density estimate. The principal assumption here is that anomalies are located in low-density regions in the probability space. The principle objective is then to learn the density function representative of the typical (training) data. A trained model will be used to assign probabilities to test samples, with low probabilities signifying anomalies.
+Perhaps the most straight-forward paradigm for detecting anomalous samples is to use the probability density estimate. The principal assumption here is that anomalies are located in low-density regions in the probability space. The objective is to learn the density function representative of the typical (training) data. A trained model will be used to assign probabilities to test samples, with low probabilities signifying anomalies.
 
 
-One class of such models are mixture models that estimate the parameters for a mixture of probability distributions, which are then used to assign likelihoods.
-Examples include Gaussian Mixture Models (GMMs)~\cite{reynolds2009gaussian} and their deep learning counter part, Deep Autoencoding Gaussian Mixture Models (DAGMM)~\cite{zong2018deep}.
+\textbf{Mixture models} estimate the parameters for a mixture of probability distributions, which are then used in conjunction to estimate likelihood of the data.
+Gaussian Mixture Models (GMMs)~\cite{reynolds2009gaussian} are one of the most popular examples of a mixture model. ~\cite{zong2018deep} introduced Deep Autoencoding Gaussian Mixture Models (DAGMM), an unsupervised anomaly detection model based on GMMs. They combined the reconstruction objective of autonecoders with the likelihood objective of mixture models. The resulting network estimates the likelihood of the \textit{low-dimensional embedding} of a data point, as obtained by the encoder network of the autoencoder. 
 
-There are many deep generative models that allow for the estimation of probability densities. 
+Certain deep generative models also allow for the estimation of probability densities. \textbf{Autoregressive} models such as Glow and PixelCNN (and their earlier counterparts, NADE and MADE) allow direct access to density estimates. However,~\cite{nalisnick2018do} showed that deep likelihood models often fail to detect out-of-distribution samples.
 
-\textbf{Autoregressive} models such as Glow and PixelCNN (and their earlier counterparts, NADE and MADE) allow direct access to density estimates. However, \cite{nalisnick2018do} showed that deep likelihood models often fail to detect out-of-distribution samples.
-
-\textbf{Normalizing flow models} and failure
+\textbf{Normalizing flow models} are a flexible class of generative models. They utilize invertible transformations to project the data into the space of a predefined base distribution, such as a Standard Gaussian. Examples of deep normalizing flos are models such as RealNVP~\cite{dinh2017density} or Neural Spline Flows~\cite{NEURIPS2019_7ac71d43}, which are typically trained via the maximum likelihood objective. However, these models fail to detect outlying samples much like deep autoregressive models. The work by ~\cite{normflow_fails} investigated the failure cases of flow models. The authors analyses suggest that flow models encode the visual appearance directly, without learning any semantic content. The anomaly detection performance of flow-based models can improve if they are trained on high-level semantic representatins (e.g. from a pretrained neural network) rather than the raw images themselves. 
 
 
-Variational Autoencoders~\cite{kingma2013auto} are another branch of generative models that utilize a latent variable factorization to approximate the density. While their behaviour on out-of-distribution samples has not been systematically observed, as with deep likelihood models \tempcite{Nalisnick}, they empirically have middling performance as anomaly detectors.
+\textbf{Variational Autoencoders}~\cite{kingma2013auto} are another branch of generative models that utilize a latent variable factorization to approximate the density. While their behaviour on out-of-distribution samples has not been systematically studied, as with deep likelihood models, they empirically show middling performance as anomaly detectors~\cite{baur2021,kascenasRoleNoiseDenoising2023}.
 
-
-ECOD~\cite{li_ecod_2022} uses a different notion of density and estimates the cumulative distribution function (CDF) for each feature in the data. It then uses the tail probabilities from each learned CDF to designate samples as anomalous.
-
-
-\begin{itemize}
-    \item Density 
-    \item Energy
-\end{itemize}
+Lastly, many non-deep learning approaches are still being developed for anomaly detection. COPOD~\cite{copod} is a parameter-free, highly interpretable outlier detection algorithm based on empirical copula models. DoSE~\cite{pmlr-dose} uses Kernel Density Estimates for learning the distribution of an ensemble of data statistics. The sum of the resulting log-probabilities is used as an outlier metric. ECOD~\cite{li_ecod_2022} uses a different notion of density and estimates the cumulative distribution function (CDF) for each feature in the data. It then uses the tail probabilities from each learned CDF to designate samples as anomalous.
 
 \subsection{Restoration based} 
 \cite{grahamDenoisingDiffusionModels2023,wyattAnoddpmAnomalyDetection2022}
