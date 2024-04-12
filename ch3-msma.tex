@@ -1,19 +1,18 @@
 \chapter{Multiscale Score Matching}
 \label{ch:msma}
 
-In this chapter, I will outline the main idea behind Multiscale Score Matching Analysis (MSMA); my method for outlier detection via score norms. In this chapter, we make use of Noise Conditioned Score Networks (NCSNs)~\cite{Song2019} (see \ref{NCSM}), which have been superseded by the newer diffusion models. employed in later chapters. However, NCSNs laid the foundation and proof of concept on which the rest of my research was developed.
+This chapter will introduce Multiscale Score Matching Analysis (MSMA); my method for outlier detection via score norms. The first sections will explore the intuition behind score-norms and the need for multiple scales. The latter sections empirically demonstrate MSMA's best-in-class performance on OOD benchmarks. Note that this work used Noise Conditioned Score Networks (NCSNs)~\cite{Song2019}, which have been superseded by diffusion models (employed in later chapters). However, NCSNs laid the foundation and proof of concept upon which the rest of the research was developed.
 
 \section{Multiscale Score Analysis}
 \label{multiscale}
-
-Consider taking the L2-norm of the score function:
+Recall that a score is the gradient of the log-likelihood with respect to the data. Intuitively, the score is a measure of how close a sample is to the local maximum in the log-probability-density space. Now consider taking the L2-norm of the score function:
 $ \norm{ s(x) } = \norm{ \nabla_{x} \log p(x)  } = \norm{ \frac{\nabla_{x}\text{~}p(x)}{p(x)} } $. Is the norm of a score function sufficient to identify samples with low density $p(x)$?
 
 Since the data density term appears in the denominator, a high likelihood will correspond to a low norm. In contrast, out-of-distribution samples should have a low likelihood with respect to the in-distribution log density (i.e. $p(x)$ is small), and we can expect them to have high score norms. However, if these outlier points reside in ``flat" regions with very small gradients (or perhaps in a local mode),  their score norms can be low despite the point belonging to a low density region. 
 \figref{fig:toygmm} illustrates a possible scenario of outlying points.
-This is our first indicator informing us that a true score norm may not be sufficient for detecting outliers. 
+This is our first indication that a true score norm may not be sufficient for detecting outliers. 
 
-I empirically validate this intuition by considering score estimates for a relatively simple toy dataset: FashionMNIST. Following the denoising score matching objective in \eqnref{eq:ncsn_dsm}, one can obtain multiple estimates of the true score by using different noise distributions $q_{\sigma}(\tilde{x}|x)$. Like \cite{Song2019}, I choose the noise distributions to be a zero-centered Gaussian scaled according to $\sigma_i$. Recall that the scores for samples perturbed by the lowest $\sigma$ noise should be closest to the `true' score. My analysis shows that the true score alone was inadequate at separating inliers from OOD samples.
+We can empirically validate this intuition by considering score estimates for a relatively simple dataset: FashionMNIST. Following the denoising score matching objective in \eqnref{eq:ncsn_dsm}, one can obtain multiple estimates of the true score by using different noise distributions $q_{\sigma}(\tilde{x}|x)$. Like \cite{Song2019}, I choose the noise distributions to be a zero-centered Gaussian scaled according to $\sigma_i$. Note that the scores for samples perturbed by the lowest $\sigma$ noise should be closest to the `true' score. My analysis shows that the true score alone was inadequate at separating inliers from OOD samples.
 
 \begin{figure}[tbhp]
 \small
@@ -37,7 +36,7 @@ I empirically validate this intuition by considering score estimates for a relat
 \end{figure}
 
 
-\subsection*{Why would multiscale scores capture outliers?}
+\subsection*{Why Do Multiscale Scores Capture Outliers?}
 \label{neighborhoods}
 %TODO: Have arrows pointing showing gradients 
 \begin{figure}[tbhp]
@@ -76,18 +75,16 @@ On the left hand side, we have the initial density with no perturbation. Note ho
 
 Figure~\ref{fig:norm_plots} plots the score norms of samples generated from the original density along with markers indicating our key regions. Note how a small scale perturbation ($\sigma_{L}=0.1$) stays very close to the true distribution. A medium scale ($\sigma_{M}=10$) Gaussian perturbation is wide enough to ``capture" the Low-Density outliers but still not wide enough to reach the inlier region from the Local-Mode outlier densities, causing them to simply fade into flat nothingness. It is only after we perform a large scale ($\sigma_{H}=20$) perturbation that the in-distribution mode gets taken into account, resulting in a higher gradient norm. This analysis allows one to intuit that larger noise levels account for a larger neighborhood context. We surmise that given a sufficiently large scale, we can capture gradient signals from distant outliers.
 
-\subsection*{Are larger scales always better?}
+\subsection*{Are Larger Scales Always Better?}
 
 However, it is imperative to note that no single scale is guaranteed to work for \textit{all} outliers. Consider outliers close to inlier modes such as the samples between Low-Density outliers and Inliers in \figref{fig:toygmm}. $\sigma_H$ results in an overlap in the score distribution of inliers and Low-Density outliers. This makes it difficult to differentiate the aforementioned ``in-between" outliers from the in-distribution samples. However, this large scale was necessary to get a big enough neighborhood context in order to capture the more distant Local-Mode outliers. Therefore, I postulate that a \emph{range} of scales is necessary for separating outliers.
 
-Admittedly, selecting this range according to the dataset is not a trivial problem. \cite{song2020improved} outlined some techniques for selecting $\{\sigma_i\}_{i=1}^L$ for NCSNs from the perspective of generative modeling. Perhaps there is a similar analog to OOD detection. I did not perform such a statistical analysis for this work and used the default range for NCSN in all my experiments. 
-
-However, I observed that my defaults are surprisingly generalizable, evident by the fact that all my experiments in Section~\ref{experiments} were performed with the same scale range. In Section~\ref{hyperparams}, I further analyze how varying the scale range effects downstream accuracy and observe that my defaults already provide near optimal performance.
+Admittedly, selecting this range according to the dataset is not a trivial problem. \cite{song2020improved} outlined some techniques for selecting $\{\sigma_i\}_{i=1}^L$ for NCSNs from the perspective of generative modeling. Perhaps there is a similar analog to OOD detection. I did not perform such a statistical analysis for this work and used the default range for NCSN in all my experiments. However, I observed that my defaults are surprisingly generalizable, evident by the fact that all my experiments in Section~\ref{experiments} were performed with the same scale range. In Section~\ref{hyperparams}, I further analyze how varying the scale range effects downstream accuracy and observe that the defaults were already near optimal.
 
 
-\section{Training an MSMA model}
+\section{Training an MSMA Model}
 
-Recall that I propose the inclusion of multiple noisy score estimates for the task of separating in- and out-of-distribution points, allowing for a Multiscale Score Matching Analysis (MSMA). Concretely, given $L$ noise levels, we calculate the L2-norms of per-sample scores for each level, resulting in an $L$-dimensional vector for each input sample. Motivated by my analyses in Section~\ref{multiscale}, I posit that in-distribution data points occupy distinct and dense regions in the $L$-dimensional score space.
+I propose the inclusion of multiple noisy score estimates for the task of separating in- and out-of-distribution points, allowing for a Multiscale Score Matching Analysis (MSMA). Concretely, given $L$ noise levels, we calculate the L2-norms of per-sample scores for each level, resulting in an $L$-dimensional vector for each input sample. Motivated by my analyses in Section~\ref{multiscale}, I posit that in-distribution data points occupy distinct and dense regions in the $L$-dimensional score space.
 
 The \textit{cluster assumption} states that decision boundaries should not pass high density regions, but instead lie in low density regions. This implies that any auxiliary method trained to learn in-distribution regions should be able to identify OOD data points that reside outside the learned space. Thus, I propose a two step unsupervised training scheme. First, one trains a NCSN model $s_{\text{IN}}(x, \sigma_L)$ to estimate scores for inlier samples, given $\{\sigma_i\}_{i=1}^L$ levels of noise. Next, we can calculate all $L$ noisy score estimates for the $N$ training samples and take the L2-norms across the input dimensions: $[\norm{  s_{\text{IN}} (X, \sigma_1) }_2^2, ... , \norm{  s_{\text{IN}} (X, \sigma_L) }_2^2 ]$. This results in an $N$x$L$ matrix. Finally, we can train an auxiliary model (such as a Gaussian Mixture Model) on this matrix to learn the spatial regions of in-distribution samples in the $L$-dimensional space.
 
@@ -97,9 +94,9 @@ We posit that learning the ``density" of the inlier data in the $L$-dimensional 
 
 Spatial clustering is conceptually the closest to our canonical understanding of denseness: points are tightly packed under some metric (usually Euclidean distance). Ideally OOD data should not occupy the same cluster as the inliers. I train Gaussian Mixture Models (GMMs) to learn clusters in the inlier data. GMMs work under the assumption that the data is composed of k-components whose shapes can be described by a (multivariate) Gaussian distribution. Thus for a given datum, one can calculate the joint probability of it belonging to any of the k-components.
 
-Probability density estimation techniques aim to learn the underlying probability density function $p_{data} (x)$ which describes the population. Normalizing flows are a family of flexible methods that can learn tractable density functions (\cite{Papamakarios2019}). They transform complex distributions into a simpler one (such as a Gaussian) through a series of invertible, differential mappings. The simpler base distribution is then used to infer the density of a given sample. For this work, I use Masked Autoregressive Flows introduced by \cite{Papamakarios2017masked}, which utilizes neural networks as the transformation functions. I then use the likelihood of the inliers to determine a threshold after which samples will be considered outliers.
+Probability density estimation techniques aim to learn the underlying probability density function $p_{data} (x)$ which describes the population. Normalizing flows are a family of flexible methods that can learn tractable density functions (\cite{Papamakarios2019}). They transform complex distributions into a simpler one (such as a Gaussian) through a series of invertible, differential mappings. The simpler base distribution is then used to infer the density of a given sample. For this work, I use Masked Autoregressive Flows introduced by \cite{Papamakarios2017masked}, which utilizes neural networks as the transformation functions. The inlier likelihoods are used to determine a threshold after which samples are considered outliers.
 
-Finally, I consider building k-nearest neighbor (k-NN) graphs to allow for yet another thresholding metric. Conceptually, the idea is to sort all samples according to distances to their k-closest (inlier) neighbor. Presumably, samples from the same distribution as the inliers will have very short distances to training data points. Despite its simplicity, this method is surprisingly accurate. It is also computationally efficient as k-NN distances can be computed via efficient data structures (such as KD Trees).
+Finally, I consider k-nearest neighbor (k-NN) graphs to allow for yet another thresholding metric. Conceptually, the idea is to sort all samples according to distances to their k-closest (inlier) neighbor. Presumably, samples from the same distribution as the inliers will have very short distances to training data points. Despite its simplicity, this method is surprisingly accurate. It is also computationally efficient as k-NN distances can be computed via efficient data structures (such as KD Trees).
 
 
 \section{Experiments on Benchmark Datasets}
@@ -199,7 +196,7 @@ Flow      & 8.6    & 6.8     & 96.7    & 93.4     & 97.7 \\  \hline
 KD Tree   & \textbf{4.1}   & \textbf{4.5}    & \textbf{99.1}   & \textbf{99.1}     & \textbf{99.2} \\ \hline
 \end{tabular}%\hspace*{-0.1\textwidth}
 
-\caption{Comparison of auxiliary models tasked to separate CIFAR-10 (inlier) and SVHN (out-of-distribution). $\downarrow$ indicates lower values are better and $\uparrow$ indicates higher values are better.}
+\caption{Comparison of auxiliary models tasked to separate CIFAR-10 (in-distribution) and SVHN (out-of-distribution). $\downarrow$ indicates lower values are better and $\uparrow$ indicates higher values are better.}
 \label{cifar_perf}
 \end{table}
 
@@ -306,7 +303,7 @@ MSMA was effectively able to identify younger age groups as out-of-distribution.
 \label{brain_perf}
 \end{table}
 
-I compared MSMA to f-AnoGAN~\cite{schlegl2019f} due to its promising results as an anomaly detector and its popularity in the medical community. I use the hyperparameters suggested in the original paper and trained them till convergence. Interestingly, MSMA outperforms f-AnoGAN in all experiments. However, f-AnoGAN is a considerably faster method, both in terms of training and inference, and may be useful for some cases where pixel-wise anomalies are required.
+I compared MSMA to f-AnoGAN~\cite{schlegl2019f} due to its promising results as an anomaly detector and its popularity in the medical community. I use the hyperparameters suggested in the original paper and trained them till convergence. Interestingly, MSMA outperforms f-AnoGAN in \textit{all} experiments. However, f-AnoGAN is a considerably faster method, both in terms of training and inference, and allows for pixel-wise anomalies out of the box. Although, it should be noted that Spatial-MSMA introduced in Chapter~\ref{ch:localizing} will overcome the latter limitation by adding localization capabilities to MSMA.
 
 
 \section{Hyperparameter Analysis}
@@ -316,14 +313,14 @@ I compared MSMA to f-AnoGAN~\cite{schlegl2019f} due to its promising results as 
 
 \centering
 \begin{subfigure}[b]{0.45\textwidth}
-\includegraphics[scale=0.4]{figures/L_analysis.png}
+\includegraphics[scale=0.5]{figures/L_analysis.png}
 \caption{Varying L from 1 to 20}
 \label{fig:L_analysis}
 \end{subfigure}
 % \hfill
 \begin{subfigure}[b]{0.45\textwidth}
     % \centering
-    \includegraphics[scale=0.4]{figures/sigma_analysis.png}
+    \includegraphics[scale=0.5]{figures/sigma_analysis.png}
     \caption{Varying $\sigma_H$ from 0.5 to 10}
     \label{fig:sigma_analysis}
 \end{subfigure}
@@ -332,27 +329,27 @@ I compared MSMA to f-AnoGAN~\cite{schlegl2019f} due to its promising results as 
 \end{figure}
 
 
-In this section, I briefly explore MSMA's sensitivity to its two main hyperparameters utilized in NCSN: the number of noise levels ($L$) and the largest scale used ($\sigma_H$). I did not vary the smallest noise scale the same across experiments and set it to $\sigma_L=0.01$. The rationale being that noise perturbations to images at such a small scale are imperceptible to the human eye and are adequate to give an estimate of the true score. For all experiments, I train on CIFAR-10 and evaluate on the \emph{All Images} dataset described in Section~\ref{datasets} and plot AUROC in Figure~\ref{fig:analysis}. In order to reduce GPU memory usage and computation time, I reduced the batch size from 128 to 64, which is why we see a performance dip from the main experiment in Section~\ref{ood_experiments}. The hyperparameters for the auxiliary models are kept the same as the main experiment.
+This section explores MSMA's sensitivity to its two main hyperparameters utilized in NCSN: the number of noise levels ($L$) and the largest scale used ($\sigma_H$). The smallest noise scale was fixed to $\sigma_L=0.01$ through all experiments as it is low enough to learn the true score values without running into issues regarding numerical precision. The rationale being that noise perturbations to images at such a small scale are imperceptible to the human eye and are adequate to give an estimate of the true score. For all experiments, I train on CIFAR-10 and evaluate on the \emph{All Images} dataset described in Section~\ref{datasets} and plot AUROC in Figure~\ref{fig:analysis}. In order to reduce GPU memory usage and computation time, I reduced the batch size from 128 to 64, which is why we see a performance dip from the main experiment in Section~\ref{ood_experiments}. The hyperparameters for the auxiliary models are kept the same as the main experiment.
 
 For the number of scales $L$, I tested the values 1, 3, 10, 15, and 20, with $\sigma_H$ fixed at the default value ($\sigma_H=1$). Recall that I follow the original NCSN schema by \cite{Song2019}, and utilize a geometric sequence of sigma scales from $\sigma_H$ to $\sigma_L$ with $L$ steps (endpoint inclusive). Thus, changing \emph{L} changes the intermediate noise scales. The results in Figure~\ref{fig:L_analysis} show that MSMA is optimal near the default ($L=10$). Increasing $L$ does not significantly vary the performance, while small values such as $L=3$ are not adequate at providing enough intermediate scales. Note that $L=1$ is the degenerate case where only the largest noise scale is used. This highlights the need for a range of scales as argued in Section \ref{neighborhoods} and empirically shows that simply using one large scale is not enough. \figurename{~\ref{fig:sigma_analysis}} plots the affect of varying the largest noise scale $\sigma_H$. I test the values 0.5, 1.0, 2.0, and 10, with the default number of scales $L=10$. Again, we observe that our default $\sigma_H=1$ performs the best and there is no noticeable improvement from varying it. Considering how images are rescaled to [0,1] before they are passed to the network, we posit that $\sigma_H=1.0$ already introduces large noise, and increasing it further seems to degrade results to varying degrees. 
 
-Lastly, I would like to emphasize that \emph{all} of my main out-of-distribution experiments in Section~\ref{experiments} were performed with the \emph{same} default hyperparameters, without any tuning. Despite this disadvantage, MSMA still outperforms its competitors ODIN~\cite{Liang2017}, Confidence Thresholding (\cite{Devries}), and Likelihood Ratios~\cite{Ren2019}, all of which need some fine-tuning of hyperparameters. Recognize that tuning requires apriori knowledge of the type of out-of-distribution samples the user expects. From the analysis in this section and my main experiment, I can confidently advocate the use of MSMA's defaults as they seem to generalize well across datasets and do not require such apriori knowledge. 
+Lastly, I would like to emphasize that \emph{all} of my main out-of-distribution experiments in Section~\ref{experiments} were performed with the \emph{same} default hyperparameters, without any tuning. Despite this disadvantage, MSMA still outperforms its competitors ODIN~\cite{Liang2017}, Confidence Thresholding (\cite{Devries}), and Likelihood Ratios~\cite{Ren2019}, all of which need some fine-tuning of hyperparameters. Recognize that tuning requires apriori knowledge of the type of out-of-distribution samples the user expects. From the analysis in this section and my main experiment, \textit{I can confidently advocate the use of MSMA's defaults as they generalize across datasets and do not require such apriori knowledge.} 
 
 % Of course, if anomalies are known at training time then one may tune MSMA's hyperparameters to for the optimal threshold. However, I did not do such finetuning as this Chapter is mainly concerned with introducing MSMA as a performant, easy to implement, and generalizable out-of-distribution detector.
 
 \section{Discussion}
 
-In this Chapter, I introduced MSMA: a method based on multiscale score matching. I outlined how scaling the noise perturbation is analogous to the increased context from local neighborhoods in the data space.  
+This chapter introduced MSMA: a method based on multiscale score matching. I outlined how scaling the noise perturbation is analogous to the increased context from local neighborhoods in the data space.  
 
 
 I demonstrated how MSMA outperforms baseline methods in \textit{every} metric for \textit{all} benchmark experiments. MSMA is easy to implement, trains completely unsupervised, requires minimal hyperparameter tuning, and generalizes to many OOD tasks.
 
-The excellent results reported in this Chapter gave me emperative??? using MSMA as a fast, general purpose anomaly detector. The following chapters will focus on extending MSMA and applying it to 3D MRI data for detecting neurodevelopmental disorders.
+The excellent results reported in this chapter empirically validate MSMA as a fast, general purpose anomaly detector. The following chapters will focus on extending MSMA and applying it to 3D MRI data for detecting neurodevelopmental disorders.
 
 \section{Extended Tabulated Results}
 \label{msma_extended_results}
 
-This section contains Tables for extended results. I report accuracies for three different auxiliary models: Gaussian Mixture Model (GMM), Normalizing Flow density estimator (Flow), and a nearest-neighbour-based model (KD Tree). The purpose of reporting results from different models is to showcase the flexibility of my approach. Each auxiliary model provides a different notion of "distance" from the inliers. A user can choose a downstream model according to their data needs. For instance, a tree-based model can be computationally efficient for high dimensional datasets, compared to the density-based models.
+This section contains the tables for the extended results. It reports accuracy metrics for three different auxiliary models: Gaussian Mixture Model (GMM), Normalizing Flow density estimator (Flow), and a nearest-neighbour-based model (KD Tree). The purpose of reporting results from different models is to showcase the flexibility of my approach. Each auxiliary model provides a different notion of "distance" from the inliers. A user can choose a downstream model according to their data needs. For instance, a tree-based model can be computationally efficient for high dimensional datasets, compared to the density-based models.
 
 \begin{table}[tbhp]
 \label{fpr}

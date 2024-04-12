@@ -1,8 +1,165 @@
-\chapter{An Appendix}
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.   
+\chapter{Appendix}
 
-Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.   
+\section{Experiment Details for Chapter~\ref{ch:gnsm}}
 
-Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.   
+\subsection*{Hyperparameters}
+ECOD is hyperparamter free so no tuning was required. Early testing showed that Isolation Forests hyperparameters were stable. Note that I did not use labelled anomalies during hyperparamater tuning and the rest of the deep learning models were tuned on an inlier-only validation set.
 
-Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer
+\subsubsection*{GNSM Networks}
+
+Most of these details are easily identifiable in the open source code. However, I still provide basic information for posterity. I used the same ResNet-like architecture for all datasets:
+
+\begin{align}
+    \texttt{t} &= \texttt{TimeEmbeddingLayer}(\lambda) \\
+    \texttt{Net(x, t)} &= \texttt{Head(ResBlock( ... ResBlock( x, t))) } \\
+    \texttt{ResBlock(x,t)} &= \texttt{x + Linear(FiLM(x,t))} \\
+    \texttt{Head} &= \texttt{Linear(LeakyReLU(LayerNorm(x))}
+\end{align}
+
+Note that the \texttt{FiLM} block is taken from ~\cite{perez2018film} and the \texttt{TimeEmbeddingLayer} is the same as used in diffusion models~\cite{song2020score}, using the \texttt{GaussianFourierProjection}.
+A simplified implementation of the ResBlock is shown below.
+
+% \begin{lstlisting}[language=Python]
+\begin{minted}[fontsize=\footnotesize]{python}
+
+class TabResBlockpp(nn.Module):
+    def __init__(self, d_in, d_out, time_emb_sz, act="gelu", dropout=0.0):
+    
+        self.norm = nn.LayerNorm(d_in)
+        self.dense_1 = nn.Linear(d_in, d_out)
+        self.act = get_act(act)
+        self.film = FiLMBlock(time_emb_sz, d_out)
+        self.dropout = nn.Dropout(dropout)
+        self.dense_2 = nn.Linear(d_out, d_out)
+
+    def forward(self, x, t):
+        
+        h = self.act(self.norm(x))
+        h = self.dense_1(h)
+        h = self.film(h, t)
+        h = self.dropout(h)
+        h = self.dense_2(h)
+
+        return x + h
+\end{minted}
+% \end{lstlisting}
+
+For Bank I trained for 2MM iterations while for CMC and Solar, I trained for 600K iterations (as they were significantly smaller datasets). All the other models were trained for 1MM iters. I used the AdamW optimizer with default paramaters. The learning rate was set to $1e-3$ with a cosine decay to $1e-5$ spanning the number of iterations. I also use an Exponential Moving Average of the weights at a decay rate of $0.999$.The base config is shown below.
+
+% \begin{lstlisting}[language=Python]
+\begin{minted}[fontsize=\footnotesize]{python}
+    def get_config():
+        config = ml_collections.ConfigDict()
+        # training
+        config.training = training = ml_collections.ConfigDict()
+        training.batch_size = 2048 # Except for CMC and Solar where it was 512
+        training.n_steps = 1000001
+        training.snapshot_freq = 10000 # Number of iterations for checkpointing
+    
+        # evaluation
+        config.eval = evaluate = ml_collections.ConfigDict()
+        evaluate.batch_size = 1024
+    
+        # data config holds information about the dataset such as number of categories
+        config.data = data = ml_collections.ConfigDict()
+    
+        # default model parameters
+        config.model = model = ml_collections.ConfigDict()
+        model.name = "tab-resnet"
+        model.tau_min = 2.0
+        model.tau_max = 20
+        ### Only relevant for Census
+        model.sigma_min = 1e-1
+        model.sigma_max = 1.0
+        #####
+        model.num_scales = 20
+        model.ndims = 1024
+        model.time_embedding_size = 128
+        model.layers = 20
+        model.dropout = 0.0
+        model.act = "gelu"
+        model.embedding_type = "fourier"
+        model.ema_rate = 0.999
+
+        # optimization
+        config.optim = optim = ml_collections.ConfigDict()
+        optim.weight_decay = 1e-4
+        optim.optimizer = "AdamW"
+        optim.lr = 1e-3
+        optim.beta1 = 0.9
+        optim.beta2 = 0.999
+        optim.grad_clip = 1.0
+        optim.scheduler = "cosine"
+\end{minted}
+% \end{lstlisting}
+
+Lastly for MSMA, I trained a GMM on the combined train,val set. I ran a small grid search over number of components (3,5,7,9) and picked the one with the best likelihood.
+
+\subsubsection*{DSVDD}
+For Deep SVDD I used the implementation available in the PyOD library~\cite{zhao2019pyod}. Initial testing showed that the autoencoder variant of this model usually performed better. This version adds a reconstruction loss to the one-class objective for increased regularization. The hidden neurons were set to [1024, 512, 256], with the \texttt{swish} activation function. Training was done with the Adam optimizer at default hyperparamters, with learning rate set to 1e-3. I trained for 1000 epochs, with the batch size set to 512.
+
+\subsubsection*{DAGMM}
+DAGMM proved to be very difficult to train as most implementations often unexpectedly result in NaNs. In fact the implementation used by~\cite{han2022adbench} never seemed to converge for any dataset. and the loss would not improve no matter how much I tweaked the hyperparameters. I believe the matrix inverse operation during the forward pass to be the culprit for this numerical instability. 
+
+We settled on modifiying a publicly available PyTorch implementation\footnote{https://github.com/lixiangwang/DAGMM-pytorch}. I added the following changes to improve stability and performance:
+
+\begin{itemize}
+    \item Added Layer Normalization
+    \item Added weight initialization
+    \item Included checkpointing and early stopping using val set
+    \item GMM parameters converted to double (float64)
+\end{itemize}
+
+Furthermore, I hand tuned hyperparameters for each dataset to find the most optimal (stable + performant) setting. Essentially, I tried to start from the same hyperparamters as DSVDD and tweaked until I got a stable model. I also early stopped on the checkpint that gave the best validation loss (tested every epoch). If a NaN was encountered before the first epoch was finished (i.e. before any checkpoint could be saved), I would restart training. The following hyperparameters were used for the final experiments:
+
+% \begin{lstlisting}[language=Python]
+\begin{minted}[fontsize=\footnotesize]{python}
+hyp = {
+    "input_dim": input_size,
+    "hidden1_dim": 1024,
+    "hidden2_dim": 512,
+    "hidden3_dim": 256,
+    "zc_dim": 2,
+    "emb_dim": 128,
+    "n_gmm": 2,
+    "dropout": 0.5,
+    "lambda1": 0.1,
+    "lambda2": 0.005,
+    "lr": 1e-4,
+    "batch_size": 256,
+    "epochs": 1000,
+    "patience_epochs": 10,
+    "checkpoint": "best",
+    "return_logits":False,
+}
+
+# Taken from KDDCUP-Rev config from original DAGMM paper
+# Most other configs are unstable and frequently result in NaNs during training
+if config.data.dataset in ["probe", "u2r"]:
+    hyp["hidden1_dim"] = 120
+    hyp["hidden2_dim"] = 60
+    hyp["hidden3_dim"] = 30
+    hyp["emb_dim"] = 10
+    hyp["n_gmm"] = 4
+    hyp["zc_dim"] = 1
+    hyp["batch_size"] = 1024
+    hyp["return_logits"] = True
+    hyp["lr"] = 1e-5
+
+if config.data.dataset == "bank":
+    hyp["hidden1_dim"] = 64
+    hyp["hidden2_dim"] = 32
+    hyp["hidden3_dim"] = 16
+    hyp["emb_dim"] = 10
+    # hyp["zc_dim"] = 1
+    hyp["batch_size"] = 4096
+    hyp["lr"] = 1e-5
+
+if config.data.dataset == "census":
+    hyp["hidden1_dim"] = 256
+    hyp["hidden2_dim"] = 128
+    hyp["hidden3_dim"] = 64
+    hyp["emb_dim"] = 10
+    hyp["lr"] = 1e-5
+
+\end{minted}

@@ -1,9 +1,16 @@
 \chapter{Detecting Anomalies in Categorical Data via Gumbel Noise Score Matching}
 \label{ch:gnsm}
 
-In this chapter, I introduce Gumbel Noise Score Matching (GNSM): a technique to extend score matching to categorical data. I will demonstrate how GNSM allows one to easily apply MSMA to tabular data for anomaly detection.
+% In this chapter, I introduce Gumbel Noise Score Matching (GNSM): a technique to extend score matching to categorical data. I will demonstrate how GNSM allows one to easily apply MSMA to tabular data for anomaly detection.
 
-My experiments show how GNSM consistently ranks high on benchmark datasets.
+% My experiments show how GNSM consistently ranks high on benchmark datasets.
+
+
+This chapter introduces Gumbel Noise Score Matching (GNSM), a novel method for learning scores of categorical data for the purpose of anomaly detection.
+The chapter first develops the theoretical foundations of GNSM, showing how continuous relaxations of categorical distributions through the Gumbel-Softmax trick can be combined with denoising score matching to estimate scores for categorical variables. The resulting objective allows the model to directly output score estimates for one-hot encoded categorical features.
+Experiments on a suite of tabular anomaly detection datasets show GNSM-MSMA achieving competitive or state-of-the-art performance compared to baseline methods, with significant improvements on certain datasets. A case study on detecting anomalous image segmentations further illustrates the versatility of the approach beyond just tabular data.
+
+The key contributions of this chapter are: 1) Developing a principled score matching framework for categorical data, and 2) Demonstrating the capability of score matching for anomaly detection on categorical types in both tabular and image datasets. The chapter highlights GNSM as a powerful and flexible approach for handling structured, non-continuous data types in anomaly detection.
 
 % \smallskip
 
@@ -22,24 +29,22 @@ In this section I will develop the ideas behind the GNSM objective. I will start
 
 \subsection*{Continuous Relaxation to Categorical Data}
 
-Gradients of log likelihoods are not defined for categorical inputs. In order to compute the score of categorical data, I propose to adopt a continuous relaxation for discrete random variables co-discovered by~\cite{jang2017categorical, maddison2017concrete}. These relaxations build on the Gumbel-Max trick to sample from a categorical distribution ~\cite{maddison2014sampling}. The procedure (often referred to as the Gumbel-Softmax) works by adding Gumbel noise~\cite{gumbel1954statistical} to the (log) probabilities and then passing the resulting vector through a softmax to retrieve a sharpened probability distribution over the categorical outcomes. Of particular interest to us, Gumbel-Softmax incorporates a temperature parameter ($\lambda$ in Equation~\eqref{eq:log_concrete}) to control the sharpening of the resulting probabilities. I argue that this temperature can also be interpreted as a noise parameter, by virtue of it increasing the entropy of the post-softmax probabilities. I will make use of this intuition to combine continuous relaxations with denoising score matching. 
+Gradients of log likelihoods are ill-defined for categorical inputs. In order to compute the score of categorical data, I propose to adopt a continuous relaxation for discrete random variables co-discovered by~\cite{jang2017categorical, maddison2017concrete}. These relaxations build on the Gumbel-Max trick to sample from a categorical distribution ~\cite{maddison2014sampling}. The procedure (often referred to as the Gumbel-Softmax) works by adding Gumbel noise~\cite{gumbel1954statistical} to the (log) probabilities and then passing the resulting vector through a softmax to retrieve a sharpened probability distribution over the categorical outcomes. Of particular interest to us, Gumbel-Softmax incorporates a temperature parameter ($\lambda$ in Equation~\eqref{eq:log_concrete}) to control the sharpening of the resulting probabilities. I argue that this temperature can also be interpreted as a noise parameter, by virtue of it increasing the entropy of the post-softmax probabilities. I will make use of this intuition to combine continuous relaxations with denoising score matching. 
 
-Note that for the rest of the chapter, I will be utilizing the formulation of \cite{maddison2017concrete} i.e. concrete random variables. In particular, I will be using the ExpConcrete Distribution as it is defined in the log domain. This is mainly done for convenience and numerical stability.
-
-Given unnormalized probabilities $\alpha \in (0, \infty)^K$, Gumbel i.i.d samples $\mathit{G}_k$, and a smoothing factor $\lambda \in (0, \infty)$, we can construct a $Y \in \mathbb{R}^n$ such that $\exp(Y) \sim \text{Concrete}(\alpha, \lambda) $:
+Note that for the rest of the chapter, I will be utilizing the formulation of~\cite{maddison2017concrete} i.e. concrete random variables. In particular, I will be using a variant of the Concrete Distribution called ExpConcrete introduced by the same authors (shown in~\eqnref{eq:log_concrete}). Given unnormalized probabilities $\alpha \in (0, \infty)^K$, Gumbel i.i.d samples $\mathit{G}_k$, and a smoothing factor $\lambda \in (0, \infty)$, we can construct an ExpConcrete random variable $Y \in \mathbb{R}^n$ such that $\exp(Y) \sim \text{Concrete}(\alpha, \lambda) $:
 
 \begin{equation}
     Y_k = \frac{\log \alpha_k + G_k}{\lambda} - \log \sum_{i=1}^{K} \exp \br{\frac{\log \alpha_i + G_i}{\lambda}}
     \label{eq:log_concrete}
 \end{equation}
 
-As $\lambda \rightarrow 0$, the computation approaches an argmax, while large values of $\lambda$ will push the random variable towards a uniform distribution.
+As $\lambda \rightarrow 0$, the computation approaches an argmax, while large values of $\lambda$ will push the random variable towards a uniform distribution. This main purpose of preferring the ExpConcrete Distribution over the Concrete Distribution is numerical stability, as the former is defined in the log domain.
 
-We now have the basic ingredients to start learning scores for our relaxed-categorical data.
 
 \subsection*{Score Matching with Categorical Variables}
 
-I start by noting that the proof of the denoising score matching objective by \cite{vincent2011connection} (~\eqnref{eq:denoising_sm}) holds true for any $q_\sigma$, provided that $\log q_{\sigma}(\Tilde{x} |x)$ is differentiable.
+We now have the basic ingredients to start learning scores for our relaxed-categorical data.
+Firstly, note that the proof of the denoising score matching objective by \cite{vincent2011connection} (~\eqnref{eq:denoising_sm}) holds true for any $q_\sigma$, provided that $\log q_{\sigma}(\Tilde{x} |x)$ is differentiable.
 Recall that $q_\sigma$ plays the role of a noise distribution. While most denoising score matching models incorporate Gaussian perturbation~\cite{Song2019,song2020score,vincent2011connection}, I emphasize that \textit{any} noise distribution may be used during training.
 % \footnote{There are some weak regularity conditions that are almost always satisfied}.
 
@@ -123,6 +128,16 @@ Here, $K_d$ represents the number of outcomes per category, $x_d$ represents the
 
 Thus, I have shown that a Concrete relaxation allows one to model the scores of categorical variables by acting as the noise distribution in the DSM objective. The network will output the scores of the logits representing the categorical feature. Intuitively, these scores are gradients on a simplex which are pointing in the direction of the category that maximizes the likelihood of the datapoint.
 
+\subsection*{A Note on Optimizing the GNSM Objective in Practice}
+
+Observing the loss in ~\eqnref{eq:ncsn_obj}, we see that we are minimizing the difference between two distributions as both inner terms pass through a softmax function. This insight led me to postulate that that one could substitute the mean squared error loss (MSE) for a metric more apt for matching distributions. I therefore ran experiments using the KL divergence objective as shown in \eqref{kl_obj}. This objective showed faster convergence than MSE. Admittedly, this result is only empirical. It may be possible to gain similar improvements in convergence for the MSE by properly tuning the optimization hyperparameters such as the learning rate.
+
+\begin{equation}
+\label{kl_obj}
+    J(\theta)  =  \sum_{d=0}^{D} \sum_{i=0}^{L} \lambda_i^2 K_d^2 ~\mathbb{E}_{\mathbf{x} \sim p_{\text{data}}} \mathbb{E}_{\Tilde{\mathbf{x}} \sim p_{\lambda_i}} \s{ D_{\text{KL}} (\sigma(\epsilon) \parallel  \sigma( \epsilon_\theta(\tilde{\mathbf{x}}_d) ) }
+\end{equation}
+
+
 \subsection*{Anomaly Detection via GNSM-based MSMA}
 Once a network is trained with the denoising objective in~\eqnref{eq:ncsn_obj}, we can plug the scores into MSMA to identify anomalies. For a given point $x$, I compute the score estimates for all noise perturbation levels. The resulting vector represents the $L$-dimensional multiscale embedding space:
 \begin{equation}\label{eq:norms}
@@ -133,7 +148,7 @@ Following the mechanism laid out in Chapter~\ref{ch:msma}, our goal is to learn 
 
 \section{What Makes GNSM Appropriate for Anomaly Detection?}\label{sec:gumbel_ano}
 
-In this section I will elaborate on the need for GNSM as an anomaly detector. Next, I will demonstrate the use of GNSM combined with MSMA as a promising methodology for anomaly detection in tabular data, which remains an unsolved problem~\cite{pang_deep_2021, ruff_unifying_2021, aggarwal_introduction_2017}.  
+This section will elaborate on the need for GNSM as an anomaly detector. Next, I will demonstrate the use of GNSM combined with MSMA as a promising methodology for anomaly detection in tabular data, which remains an unsolved problem~\cite{pang_deep_2021, ruff_unifying_2021, aggarwal_introduction_2017}.  
 
 \subsection*{Limitations of Current Models in Handling Categorical Data}
 
@@ -143,7 +158,7 @@ This oversight in existing models highlights a significant opportunity for advan
 
 In a similar vein, for categorical data, a more fitting approach is to model each category as a probability distribution, acknowledging the inherent dependence among classes within a category. While classes within a category are dependent, it is reasonable to consider different categories as independent.
 
-GNSM addresses this gap by treating each categorical variable distinctly. Internally, it employs a Gumbel-Softmax relaxation for each one-hot encoded vector. The model computes loss on a per-category basis, thereby respecting and leveraging the inter-class dependencies within each category. This design choice represents a significant inductive bias of GNSM, aligning closely with the inherent structure of categorical data.  Furthermore, GNSM yields a straightforward approach to model mixed continuous/discrete features via estimating scores through a denoising objective..
+GNSM addresses this gap by treating each categorical variable distinctly. Internally, it employs a Gumbel-Softmax relaxation for each one-hot encoded vector. The model computes loss on a per-category basis, thereby respecting and leveraging the inter-class dependencies within each category. This design choice reflects a significant inductive bias of GNSM, aligning closely with the inherent structure of categorical data.  Furthermore, GNSM yields a straightforward approach to model mixed continuous/discrete features via estimating scores through a denoising objective..
 
 %  None of the methods tested in the recent comprehensive benchmark performed by~\cite{han2022adbench} make explicit use of categorical information. After transforming the categorical variables into one-hot or binary encodings, existing methods proceed to treat them as independent (continuous) variables. In reality, each categorical variable can only be one class at a time. Therefore, these models make an incorrect assumption by foregoing the dependence between classes within a category. 
 
@@ -315,182 +330,3 @@ Here I am displaying show the predictions that were ranked to be anomalous by GN
   \includegraphics[width=\textwidth]{figures/dsvdd_k50_samples_s.pdf}
   \caption{Random samples from Top-K=50 DSVDD rankings. The columns (repeated) show input image, ground truth segmentations, and model predictions respectively.  }\label{fig:dsvdd_samples_k50}
 \end{figure*}
-
-
-
-\subsection*{Experiment Details}
-
-\subsubsection*{Hyperparameters}
-ECOD is hyperparamter free so no tuning was required. Early testing showed that Isolation Forests hyperparameters were stable. Note that I did not use labelled anomalies during hyperparamater tuning and the rest of the deep learning models were tuned on an inlier-only validation set.
-
-\subsubsection*{GNSM Networks}
-
-% \begin{equation}
-% \label{ncsn_obj}
-%     \sum_{d=0}^{D} \sum_{i=0}^{L} \lambda_i^2 K_d^2 ~\mathbb{E}_{\mathbf{x_d} \sim p_{\text{data}}} \mathbb{E}_{\Tilde{\mathbf{x}}_d \sim p_{\lambda_i}} \s{ || ( \sigma( \epsilon_\theta(\tilde{\mathbf{x}}_d,  \lambda_i) ) - \sigma(\epsilon) )||^2 }
-% \end{equation}
-
-Observing the loss in ~\eqnref{eq:ncsn_obj}, we see that we are minimizing the difference between two distributions as both inner terms pass through a softmax function. This insight led me to postulate that that I could substitute the mean squared error loss (MSE) for a metric more apt for matching distributions. I therefore ran experiments with KL divergence, which showed faster convergence than MSE. However this result is only empirical and I argue that tuning the optimization algorithm for MSE might gain similar improvements.
-
-\begin{equation}
-\label{kl_obj}
-    J(\theta)  =  \sum_{d=0}^{D} \sum_{i=0}^{L} \lambda_i^2 K_d^2 ~\mathbb{E}_{\mathbf{x} \sim p_{\text{data}}} \mathbb{E}_{\Tilde{\mathbf{x}} \sim p_{\lambda_i}} \s{ D_{\text{KL}} (\sigma(\epsilon) \parallel  \sigma( \epsilon_\theta(\tilde{\mathbf{x}}_d) ) }
-\end{equation}
-
-
-Most of these details are easily identifiable in my open source code. However, I still provide basic information for posterity. I used the same ResNet-like architecture for all datasets:
-
-\begin{align}
-    \texttt{t} &= \texttt{TimeEmbeddingLayer}(\lambda) \\
-    \texttt{Net(x, t)} &= \texttt{Head(ResBlock( ... ResBlock( x, t))) } \\
-    \texttt{ResBlock(x,t)} &= \texttt{x + Linear(FiLM(x,t))} \\
-    \texttt{Head} &= \texttt{Linear(LeakyReLU(LayerNorm(x))}
-\end{align}
-
-Note that the \texttt{FiLM} block is taken from ~\cite{perez2018film} and the \texttt{TimeEmbeddingLayer} is the same as used in diffusion models~\cite{song2020score}, using the \texttt{GaussianFourierProjection}.
-A simplified implementation of the ResBlock is shown below.
-
-% \begin{lstlisting}[language=Python]
-\begin{minted}[fontsize=\footnotesize]{python}
-
-class TabResBlockpp(nn.Module):
-    def __init__(self, d_in, d_out, time_emb_sz, act="gelu", dropout=0.0):
-    
-        self.norm = nn.LayerNorm(d_in)
-        self.dense_1 = nn.Linear(d_in, d_out)
-        self.act = get_act(act)
-        self.film = FiLMBlock(time_emb_sz, d_out)
-        self.dropout = nn.Dropout(dropout)
-        self.dense_2 = nn.Linear(d_out, d_out)
-
-    def forward(self, x, t):
-        
-        h = self.act(self.norm(x))
-        h = self.dense_1(h)
-        h = self.film(h, t)
-        h = self.dropout(h)
-        h = self.dense_2(h)
-
-        return x + h
-\end{minted}
-% \end{lstlisting}
-
-For Bank I trained for 2MM iterations while for CMC and Solar, I trained for 600K iterations (as they were significantly smaller datasets). All the other models were trained for 1MM iters. I used the AdamW optimizer with default paramaters. The learning rate was set to $1e-3$ with a cosine decay to $1e-5$ spanning the number of iterations. I also use an Exponential Moving Average of the weights at a decay rate of $0.999$.The base config is shown below.
-
-% \begin{lstlisting}[language=Python]
-\begin{minted}[fontsize=\footnotesize]{python}
-    def get_config():
-        config = ml_collections.ConfigDict()
-        # training
-        config.training = training = ml_collections.ConfigDict()
-        training.batch_size = 2048 # Except for CMC and Solar where it was 512
-        training.n_steps = 1000001
-        training.snapshot_freq = 10000 # Number of iterations for checkpointing
-    
-        # evaluation
-        config.eval = evaluate = ml_collections.ConfigDict()
-        evaluate.batch_size = 1024
-    
-        # data config holds information about the dataset such as number of categories
-        config.data = data = ml_collections.ConfigDict()
-    
-        # default model parameters
-        config.model = model = ml_collections.ConfigDict()
-        model.name = "tab-resnet"
-        model.tau_min = 2.0
-        model.tau_max = 20
-        ### Only relevant for Census
-        model.sigma_min = 1e-1
-        model.sigma_max = 1.0
-        #####
-        model.num_scales = 20
-        model.ndims = 1024
-        model.time_embedding_size = 128
-        model.layers = 20
-        model.dropout = 0.0
-        model.act = "gelu"
-        model.embedding_type = "fourier"
-        model.ema_rate = 0.999
-
-        # optimization
-        config.optim = optim = ml_collections.ConfigDict()
-        optim.weight_decay = 1e-4
-        optim.optimizer = "AdamW"
-        optim.lr = 1e-3
-        optim.beta1 = 0.9
-        optim.beta2 = 0.999
-        optim.grad_clip = 1.0
-        optim.scheduler = "cosine"
-\end{minted}
-% \end{lstlisting}
-
-Lastly for MSMA, I trained a GMM on the combined train,val set. I ran a small grid search over number of components (3,5,7,9) and picked the one with the best likelihood.
-
-\subsubsection*{DSVDD}
-For Deep SVDD I used the implementation available in the PyOD library~\cite{zhao2019pyod}. Initial testing showed that the autoencoder variant of this model usually performed better. This version adds a reconstruction loss to the one-class objective for increased regularization. The hidden neurons were set to [1024, 512, 256], with the \texttt{swish} activation function. Training was done with the Adam optimizer at default hyperparamters, with learning rate set to 1e-3. I trained for 1000 epochs, with the batch size set to 512.
-
-\subsubsection*{DAGMM}
-DAGMM proved to be very difficult to train as most implementations often unexpectedly result in NaNs. In fact the implementation used by~\cite{han2022adbench} never seemed to converge for any dataset. and the loss would not improve no matter how much I tweaked the hyperparameters. I believe the matrix inverse operation during the forward pass to be the culprit for this numerical instability. 
-
-We settled on modifiying a publicly available PyTorch implementation\footnote{https://github.com/lixiangwang/DAGMM-pytorch}. I added the following changes to improve stability and performance:
-
-\begin{itemize}
-    \item Added Layer Normalization
-    \item Added weight initialization
-    \item Included checkpointing and early stopping using val set
-    \item GMM parameters converted to double (float64)
-\end{itemize}
-
-Furthermore, I hand tuned hyperparameters for each dataset to find the most optimal (stable + performant) setting. Essentially, I tried to start from the same hyperparamters as DSVDD and tweaked until I got a stable model. I also early stopped on the checkpint that gave the best validation loss (tested every epoch). If a NaN was encountered before the first epoch was finished (i.e. before any checkpoint could be saved), I would restart training. The following hyperparameters were used for the final experiments:
-
-% \begin{lstlisting}[language=Python]
-\begin{minted}[fontsize=\footnotesize]{python}
-hyp = {
-    "input_dim": input_size,
-    "hidden1_dim": 1024,
-    "hidden2_dim": 512,
-    "hidden3_dim": 256,
-    "zc_dim": 2,
-    "emb_dim": 128,
-    "n_gmm": 2,
-    "dropout": 0.5,
-    "lambda1": 0.1,
-    "lambda2": 0.005,
-    "lr": 1e-4,
-    "batch_size": 256,
-    "epochs": 1000,
-    "patience_epochs": 10,
-    "checkpoint": "best",
-    "return_logits":False,
-}
-
-# Taken from KDDCUP-Rev config from original DAGMM paper
-# Most other configs are unstable and frequently result in NaNs during training
-if config.data.dataset in ["probe", "u2r"]:
-    hyp["hidden1_dim"] = 120
-    hyp["hidden2_dim"] = 60
-    hyp["hidden3_dim"] = 30
-    hyp["emb_dim"] = 10
-    hyp["n_gmm"] = 4
-    hyp["zc_dim"] = 1
-    hyp["batch_size"] = 1024
-    hyp["return_logits"] = True
-    hyp["lr"] = 1e-5
-
-if config.data.dataset == "bank":
-    hyp["hidden1_dim"] = 64
-    hyp["hidden2_dim"] = 32
-    hyp["hidden3_dim"] = 16
-    hyp["emb_dim"] = 10
-    # hyp["zc_dim"] = 1
-    hyp["batch_size"] = 4096
-    hyp["lr"] = 1e-5
-
-if config.data.dataset == "census":
-    hyp["hidden1_dim"] = 256
-    hyp["hidden2_dim"] = 128
-    hyp["hidden3_dim"] = 64
-    hyp["emb_dim"] = 10
-    hyp["lr"] = 1e-5
-
-\end{minted}
