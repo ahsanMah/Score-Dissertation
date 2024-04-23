@@ -1,14 +1,12 @@
 \chapter{Detecting Anomalies in Categorical Data via Gumbel Noise Score Matching}
 \label{ch:gnsm}
 
-% In this chapter, I introduce Gumbel Noise Score Matching (GNSM): a technique to extend score matching to categorical data. I will demonstrate how GNSM allows one to easily apply MSMA to tabular data for anomaly detection.
-
-% My experiments show how GNSM consistently ranks high on benchmark datasets.
-
+It is common to represent information as discrete categories such as gender, shapes or product quality.
+One may wish to detect anomalies within this data type, in addition to continuous variables. However, MSMA, as it was introduced in the previous chapter is unable to model categorical data.
+This is because a score is ill-defined for categorical variables. There is no notion of a gradient for probability density functions~\footnote{In this case, it is more correct to refer to them as probability \textit{mass} function} of discrete data. If we can overcome this limitation, we will be able to incorporate more information into MSMA. Ultimately, my goal is to allow MSMA to model any available metadata that is paired with the continuous features, e.g. demographic data paired with brain MRIs. I posit that this mixed data type modeling would enable more robust anomaly detection decisions.
 
 This chapter introduces Gumbel Noise Score Matching (GNSM), a novel method for learning scores of categorical data for the purpose of anomaly detection.
-The chapter first develops the theoretical foundations of GNSM, showing how continuous relaxations of categorical distributions through the Gumbel-Softmax trick can be combined with denoising score matching to estimate scores for categorical variables. The resulting objective allows the model to directly output score estimates for one-hot encoded categorical features.
-Experiments on a suite of tabular anomaly detection datasets show GNSM-MSMA achieving competitive or state-of-the-art performance compared to baseline methods, with significant improvements on certain datasets. A case study on detecting anomalous image segmentations further illustrates the versatility of the approach beyond just tabular data.
+The chapter first develops the theoretical foundations of GNSM, showing how continuous relaxations of categorical distributions through the Gumbel-Softmax trick can be combined with denoising score matching to estimate scores for categorical variables. The resulting objective allows the model to directly output score estimates for one-hot encoded categorical features. Experiments on a suite of tabular anomaly detection datasets show GNSM-MSMA achieving competitive or state-of-the-art performance compared to baseline methods, with significant improvements on certain datasets. A case study on detecting anomalous image segmentations further illustrates the versatility of the approach beyond just tabular data.
 
 The key contributions of this chapter are: 1) Developing a principled score matching framework for categorical data, and 2) Demonstrating the capability of score matching for anomaly detection on categorical types in both tabular and image datasets. The chapter highlights GNSM as a powerful and flexible approach for handling structured, non-continuous data types in anomaly detection.
 
@@ -24,6 +22,7 @@ The key contributions of this chapter are: 1) Developing a principled score matc
 
 
 \section{A Recipe for Categorical Score Matching}
+\label{sec:recipe}
 
 In this section I will develop the ideas behind the GNSM objective. I will start by introducing a technique for continuous approximations (i.e. relaxations) for categorical distributions. I will then formulate an objective (based on denoising score matching) to learn the scores of the relaxed categorical variables. 
 
@@ -50,6 +49,7 @@ Recall that $q_\sigma$ plays the role of a noise distribution. While most denois
 
 \subsection*{ExpConcrete($\alpha$,~$\lambda$) as a Noise Distribution}
 \label{combine}
+
 Following the reasoning above and the temperature parameter ($\lambda$) available in~\eqnref{eq:log_concrete}, I propose to repurpose the Concrete distribution to add `noise' to our continuous relaxations of the categorical variables. Increasing $\lambda$ will allow us to corrupt the input $x$ by scaling the logits and smoothing out the categorical probabilities. Therefore, in GNSM, the (Exp)Concrete Distribution acts both as the relaxation mechanism \textit{and} the noise distribution:
 
 \begin{align*}
@@ -146,7 +146,8 @@ Once a network is trained with the denoising objective in~\eqnref{eq:ncsn_obj}, 
 where $s_\theta(x, \lambda_i)$ is the noise conditioned score network estimating $\nabla_{x} \log p_{\lambda_i}(x)$.
 Following the mechanism laid out in Chapter~\ref{ch:msma}, our goal is to learn ``areas of \emph{concentration}" of the inlier data in the $L$-dimensional embedding space ($\eta(x)$, for $x\sim p$). Concretely, I train a GMM on $\eta(X_{\text{IN}})$, where $X_{\text{IN}}$ represents the set of inliers. At inference time, I first use the score network to compute the score-embedding space $\eta(x)$ for the test samples and then compute the likelihoods of the scores via the trained GMM. The negative of this likelihood is then assumed as the anomaly score for the test samples.
 
-\section{What Makes GNSM Appropriate for Anomaly Detection?}\label{sec:gumbel_ano}
+\section{What Makes GNSM Appropriate for Anomaly Detection?}
+\label{sec:gumbel_ano}
 
 This section will elaborate on the need for GNSM as an anomaly detector. Next, I will demonstrate the use of GNSM combined with MSMA as a promising methodology for anomaly detection in tabular data, which remains an unsolved problem~\cite{pang_deep_2021, ruff_unifying_2021, aggarwal_introduction_2017}.  
 
@@ -216,7 +217,7 @@ My noise parameter $\lambda$ is a geometric sequence from $\lambda=2$ to $\lambd
 
 \begin{table*}[!ht]
     \centering
-    % \tiny
+    \small
     \hspace*{-0.8cm}\begin{tabular}{c|c|ccccc}
     Dataset & Ano Ratio & IForests       & ECOD           & DAGMM          & DSVDD          & GNSM (Ours) \\
     \midrule
@@ -250,7 +251,7 @@ As such, in my testing, no one method definitively outperforms the rest; an outc
 In this context, I emphasize that GNSM consistently ranks high across all datasets tested. In contrast, each of the competing methods were the top performer in only one of the datasets in Table~\ref{tabular_results}, and significantly underperformed in others. Averaged over all datasets, GNSM performs best. This is empirical confirmation that GNSM is a consistent contender in the suite of available algorithms for practitioners looking to detect anomalies in unlabeled data domains.
 
 \section{Case Study: Detecting Segmentation Failures}
-\label{cat-seg-study}
+\label{sec:cat-seg-study}
 I designed this case study to demonstrate how GNSM may be applied to a real world use case of detecting anomalous segmentation masks.
 The task here is to learn the distribution of ground truth image-segmentation pairs. At inference time, GNSM-MSMA will score the outputs of a pretrained segmentation model. My hypothesis is that GNSM will correctly detect failure cases i.e. poor segmentations will be ranked higher on the anomaly scale.
 
@@ -276,28 +277,49 @@ For my score matching network, I adopted the NCSN++ model used by~\cite{song2020
 \label{corrs}
 \end{figure}
 
-\begin{figure*}\label{fig:samples}
-     \begin{subfigure}[t]{0.92\textwidth}
-         \centering
-        \includegraphics[width=0.95\textwidth, height=4.2in]{figures/msma_rand_samples_s.pdf}
-      \caption{Random samples from Top-K=50 GNSM rankings. Note how the predicted segmentations are either partial/missing or include incorrect classes.}
-      \label{fig:gnsm_samples}
-     \end{subfigure}
 
-     \begin{subfigure}[t]{0.92\textwidth}
-         \centering
-         \includegraphics[width=0.95\textwidth, height=4.2in]{figures/dsvdd_rand_samples_s.pdf}
-         \caption{Random samples from Top-K=50 DSVDD rankings. Note how only a few predictions may be considered anomalous.}
-         \label{fig:dsvdd_samples}
-     \end{subfigure}
-\caption{Random samples from Top-K=50 anomaly rankings. The columns (repeated twice) show input image, ground truth segmentations, and model predictions respectively. Different classes are denoted by color.}
+\begin{figure*}[htbp!]
+  \centering
+  \includegraphics[width=\textwidth]{figures/msma_k50_samples_s.pdf}
+  \caption{Samples from Top-K=50 GNSM rankings. The columns (repeated) show input image, ground truth segmentations, and model predictions respectively.  }
+  % \label{fig:msma_samples_k50}
+  \label{fig:gnsm_samples}
 \end{figure*}
+
+\begin{figure*}[htbp!]
+  \centering
+  \includegraphics[width=\textwidth]{figures/dsvdd_k50_samples_s.pdf}
+  \caption{Random samples from Top-K=50 DSVDD rankings. The columns (repeated) show input image, ground truth segmentations, and model predictions respectively.  }
+  % \label{fig:dsvdd_samples_k50}
+  \label{fig:dsvdd_samples}
+\end{figure*}
+
+
+% \begin{figure*}\label{fig:samples}
+%      \begin{subfigure}[t]{0.92\textwidth}
+%          \centering
+%         \includegraphics[width=0.95\textwidth, height=4.2in]{figures/msma_rand_samples_s.pdf}
+%       \caption{Random samples from Top-K=50 GNSM rankings. Note how the predicted segmentations are either partial/missing or include incorrect classes.}
+%       \label{fig:gnsm_samples}
+%      \end{subfigure}
+
+%      \begin{subfigure}[t]{0.92\textwidth}
+%          \centering
+%          \includegraphics[width=0.95\textwidth, height=4.2in]{figures/dsvdd_rand_samples_s.pdf}
+%          \caption{Random samples from Top-K=50 DSVDD rankings. Note how only a few predictions may be considered anomalous.}
+%          \label{fig:dsvdd_samples}
+%      \end{subfigure}
+% \caption{Random samples from Top-K=50 anomaly rankings. The columns (repeated twice) show input image, ground truth segmentations, and model predictions respectively. Different classes are denoted by color.}
+% \end{figure*}
 
 I computed the anomaly scores from both GNSM and DSVDD and ranked the images from most to least anomalous. Next, I took the top $K=50$ images (out of 1449) and computed the  Pearson correlation coefficients between the ground truth segmentation metrics and the anomaly scores. I chose the worst ranked images for our analysis as we are interested in the efficacy of these scores for identifying segmentation failures as opposed to assessing the quality of successful segmentations.
 
-Figure \ref{corrs} shows the correlations between the ground truth segmentation metrics and the anomaly scores from GNSM and DSVDD.  Recall that Dice is a similarity metric while MSD and 95-HD are both distance-based metrics. Therefore, I initially hypothesized that a good anomaly score should correlate negatively with Dice and positively with the distances. Our results show that GNSM correlates strongly in the direction expected. DSVDD on the other hand achieved a poor correlation with Dice and inverse correlations with the distance based metrics.
+Figure~\ref{corrs} shows the correlations between the ground truth segmentation metrics and the anomaly scores from GNSM and DSVDD.  Recall that Dice is a similarity metric while MSD and 95-HD are both distance-based metrics. Therefore, I initially hypothesized that a good anomaly score should correlate negatively with Dice and positively with the distances. Our results show that GNSM correlates strongly in the direction expected. DSVDD on the other hand achieved a poor correlation with Dice and inverse correlations with the distance based metrics.
 
-To qualitatively assess the results of each model a subset of the worst ranked predictions are plotted alongside the groundtruth in Figures~\ref{fig:gnsm_samples},\ref{fig:dsvdd_samples}. Observe how the predictions ranked by GNSM in Figure~\ref{fig:gnsm_samples} are either complete failures (most of the image is designated the background class) or severe under-segmentations. Predictions ranked by DSVDD in Figure~\ref{fig:dsvdd_samples} do not exhibit any obvious pattern of segmentation failures, with most being reasonable predictions. Please look at the extended results in Section~\ref{gnsm_ext_res} for all sorted $K=50$ rankings. 
+To qualitatively assess the results of each model a subset of the worst ranked predictions are plotted alongside the groundtruth in Figures~\ref{fig:gnsm_samples},\ref{fig:dsvdd_samples}.
+The figures show predictions that were ranked to be anomalous by GNSM~\ref{fig:gnsm_samples} and DSVDD~\ref{fig:dsvdd_samples}. Images are displayed in order from highest ranking to lowest (displayed left to right).
+
+Observe how the predictions ranked by GNSM in Figure~\ref{fig:gnsm_samples} are either complete failures (most of the image is designated the background class) or severe under-segmentations. Predictions ranked by DSVDD in Figure~\ref{fig:dsvdd_samples} do not exhibit any obvious pattern of segmentation failures, with most being reasonable predictions. Please look at the extended results in Section~\ref{gnsm_ext_res} for all sorted $K=50$ rankings. 
 
 
 I believe these results not only exemplify GNSM’s generalization capabilities to non-tabular data, but also highlight a practical application. Quantifying segmentation uncertainties is useful when deploying off-the-shelf models. My experiments prove that GNSM-MSMA may be employed as a filtering mechanism to automatically detect poor segmentations, which could then be reviewed further downstream.
@@ -311,22 +333,22 @@ I also acknowledge that GNSM explicitly needs to know the number of outcomes per
 
 \section{Conclusion}
 
-In this chapter I introduced Gumbel Noise Score Matching (GNSM): a novel method for learning scores of categorical data types. I outline how to compute scores of continuously relaxed categorical data and derive the appropriate training objective based on denoising score matching. I demonstrated how the estimated scores could be used for anomaly detection when plugged into MSMA.
+This chapter introduced Gumbel Noise Score Matching (GNSM): a novel method for learning scores of categorical data types. Section~\ref{sec:recipe} outlines how to compute scores of continuously relaxed categorical data and derive the appropriate training objective based on denoising score matching. Section~\ref{sec:gumbel_ano} demonstrates how the estimated scores could be used for anomaly detection when plugged into MSMA.
 
-GNSM achieves competitive performance with respect to baselines on a suite of tabular anomaly detection datasets, attaining significant improvements on certain datasets. Furthermore, GNSM can easily be extended to images and excels on the real-world task of detecting anomalous segmentations. Lastly, I believe my novel categorical score matching formulation could be incorporated into generative models. I hope this direction may be explored in future work.
+GNSM achieves competitive performance with respect to baselines on a suite of tabular anomaly detection datasets, attaining significant improvements on certain datasets. Furthermore, GNSM can easily be extended to images and excels on the real-world task of detecting anomalous segmentations, as highlighted in Section~\ref{sec:cat-seg-study}. Lastly, I believe this categorical score matching formulation could be incorporated into generative models. I hope this direction may be explored in future work.
 
-\section{Extended Results}\label{gnsm_ext_res}
+% \section{Extended Results}\label{gnsm_ext_res}
 
-Here I am displaying show the predictions that were ranked to be anomalous by GNSM~\ref{fig:msma_samples_k50} and DSVDD~\ref{fig:dsvdd_samples_k50}. Images are displayed in order from highest ranking to lowest (displayed left to right).
+% Here I am displaying show the predictions that were ranked to be anomalous by GNSM~\ref{fig:msma_samples_k50} and DSVDD~\ref{fig:dsvdd_samples_k50}. Images are displayed in order from highest ranking to lowest (displayed left to right).
 
-\begin{figure*}[htbp!]
-  \centering
-  \includegraphics[width=\textwidth]{figures/msma_k50_samples_s.pdf}
-  \caption{Samples from Top-K=50 GNSM rankings. The columns (repeated) show input image, ground truth segmentations, and model predictions respectively.  }\label{fig:msma_samples_k50}
-\end{figure*}
+% \begin{figure*}[htbp!]
+%   \centering
+%   \includegraphics[width=\textwidth]{figures/msma_k50_samples_s.pdf}
+%   \caption{Samples from Top-K=50 GNSM rankings. The columns (repeated) show input image, ground truth segmentations, and model predictions respectively.  }\label{fig:msma_samples_k50}
+% \end{figure*}
 
-\begin{figure*}[htbp!]
-  \centering
-  \includegraphics[width=\textwidth]{figures/dsvdd_k50_samples_s.pdf}
-  \caption{Random samples from Top-K=50 DSVDD rankings. The columns (repeated) show input image, ground truth segmentations, and model predictions respectively.  }\label{fig:dsvdd_samples_k50}
-\end{figure*}
+% \begin{figure*}[htbp!]
+%   \centering
+%   \includegraphics[width=\textwidth]{figures/dsvdd_k50_samples_s.pdf}
+%   \caption{Random samples from Top-K=50 DSVDD rankings. The columns (repeated) show input image, ground truth segmentations, and model predictions respectively.  }\label{fig:dsvdd_samples_k50}
+% \end{figure*}
