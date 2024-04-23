@@ -6,10 +6,11 @@ Assuming the underlying model has learned rich information about the data, can i
 % The task was chosen such that \textit{if} a novel insight is derived, it may be of direct use to the medical research community.
 
 % Developmental disorders leading to atypical brain development are commonly diagnosed in children through clinical assessments that measure behavioral response. While effective in diagnosis, behavioral assessments do not provide any insight into the differences in brain morphometry of the neurodivergent cohort.
+Neurodevelopmental disorders are disabilities associated primarily with the functioning of the brain. Certain disorders such as Down Syndrome, Fragile-X Syndrome and Angelman Syndrome can be detected via genetic testing. Others, such as Autism Spectrum Disorder (ASD) and Attention-Deficit/Hyperactivity Disorder (ADHD), are diagnosed through clinical assessments that measure behavioral response. While effective in diagnosis, neither genetic testing nor behavioral assessments provide insight into the differences in \textit{brain morphometry} of the neurodivergent cohort. Furthermore, there is evidence for a heterogeneity in the underlying brain structures for certain brain disorders, such as ASD~\cite{heteroasd}. This implies that the same behavior can be originated from different atypical brain development.
 
-Developmental disorders are commonly associated with atypical brain development. Some disorders such as Down Syndrome, Fragile-X Syndrome and Angelman Syndrome can be detected via genetic testing. Others, such as Autism Spectrum Disorder (ASD) and Attention-Deficit/Hyperactivity Disorder (ADHD), are diagnosed through clinical assessments that measure behavioral response. While effective in diagnosis, neither genetic testing nor behavioral assessments provide insight into the differences in \textit{brain morphometry} of the neurodivergent cohort.
-
-Existing analyses primarily look at group wise differences of brain features (such as region volumes) between cohorts~\cite{giraultNeurodevelopmentAutismInfancy2020,hamnerPediatricBrainDevelopment2018}, or correlations of said features with a behavioral assessment~\cite{shenSubcorticalBrainDevelopment2022,brainsci12040439}. These analyses fail to produce specific causal relationships between the brain regions and the neurodivergence, as they mainly focus on correlational evidence.
+Existing analyses primarily look at group wise differences of brain features (such as region volumes) between cohorts~\cite{giraultNeurodevelopmentAutismInfancy2020,hamnerPediatricBrainDevelopment2018}, or correlations of said features with a behavioral assessment~\cite{shenSubcorticalBrainDevelopment2022,brainsci12040439}.
+% These analyses fail to produce specific causal relationships between the brain regions and the neurodivergence, as they mainly focus on correlational evidence.
+These analyses forgo a broad study of all brain regions in favor of specific regions that are more relevant to the disorder. This is an understandable trade-off as reserarchers often have strong prior evidence that correlates brain regions to behavioral actions, and have limited time and resources. However, in making this trade-off, these analyses are less likely to uncover novel associations between brain regions and behavioral phenotypes (in the context of the neurodevelopmental disorder).
 Furthermore, the researchers introduce additional biases when they select regions of interest (ROIs) to be studied using their preconceived notions about the disorder.
 
 Herein lies the opportunity for a data-driven methodology to uncover atypically developing ROIs that are reflected in the data but, may be underexplored in the existing  literature. One can task a model to identify subgroups that deviate from the typical (via outlier detection), and subsequently highlight the brain morphometry shared across the subpopulations (via localization).  MSMA, combined with its localization augmentation, naturally allows for such data exploration. This chapter outlines a process through which MSMA was utilized to derive insights about brain MRI data.
@@ -39,7 +40,7 @@ This section will briefly go over existing dimensionality reduction algorithms a
 
 \subsection*{Common Dimensionality Reduction Algorithms}
 
-Most commonly, researchers have used Principal Component Analysis (PCA)~\tempcite{PCA} to select the most important components to display. While this technique is fast and well understood, it has the downside of only capturing linear subspaces as it will select orthogonal components of highest variation. Recently, two other techniques have gained popularity as methods to visualize high dimensional non linear data: t-SNE and UMAP.  
+Most commonly, researchers have used Principal Component Analysis (PCA)~\cite{abdi2010principal}) to select the most important components in the data. PCA finds the eigenvectors of the correlation matrix of the data. Intuitively, these eigenvectors capture the largest variation in the data. While this technique is fast and well understood, it has the downside of only capturing \textit{linear} subspaces as it will select orthogonal components of increasing variation. Therefore, it is most effective for visualization when the data itself is linearly separable. Recently, two other techniques have gained popularity as methods to visualize high dimensional non linear data: t-SNE and UMAP.  
 
 % \subsection*{A Brief Discussion on t-SNE and UMAP}
 
@@ -127,9 +128,7 @@ A 3D diffusion model was trained on the ABCD-HCPD dataset. At inference time, th
 
 Intuitively, MSMA capture a feature space of atypicality. As such, different regions in the score-norm space may correspond to different manifestations of abnormalities. I argue that we can employ SOM to map the score-norm space and descretize it into phenotypes/prototypes of atypicality. Using SOM, it is possible to explore whether there exist sub-populations in the DS cohort that are differentially expressed in the score-norm space. 
 
-Recall that in SOMs, each sample is matched with one BMU (represented as a cell in the grid). Consider the BMU with the most matches for a particular cohort. I will denote this BMU as the Maximal-Prototype for that cohort. 
-
-~\figref{fig:som-abcd} shows a SOM trained on the score-norms of the inliers. The heatmap reflects the neighbouring distances between each grid cell, and can be interpreted as the relative density of each region in the score-norm space.  We can clearly observe a Maximal-Prototype for the DS cohort. Out of 28 DS cases, 16 match this prototype. Interestingly, 12 out of the matching 16 are female, pointing to a female-dominant DS phenotype.
+Recall that in SOMs, each sample is matched with one BMU (represented as a cell in the grid). Consider the BMU with the most matches for a particular cohort. I will denote this BMU as the Maximal-Prototype for that cohort. ~\figref{fig:som-abcd} shows a SOM trained on the score-norms of the inliers. The heatmap reflects the neighbouring distances between each grid cell, and can be interpreted as the relative density of each region in the score-norm space.  We can clearly observe a Maximal-Prototype for the DS cohort. Out of 28 DS cases, 16 match this prototype. Interestingly, 12 out of the matching 16 are female, pointing to a female-dominant DS phenotype.
 
 \begin{figure}[tbhp]
 \centering
@@ -221,13 +220,21 @@ A total of 35 behavior scores and 40 ROIs were tested, resulting in 1400 correla
 
 ~\figref{fig:roi-scatter} shows the linear regression plot of the ROI anomaly scores and behavioral assessment subscores (percentiles). Note that the $r$ values in the plots are the rank correlations. All pairs have \textit{corrected} p-value below $0.1$. Recall, that this implies an expected FDR of $10\%$. The plots show above moderate correlations across most ROI-Behavior pairs.
 
-\begin{figure}[tbhp!]
+\begin{figure}[h!]
 \centering
-\includegraphics[width=\textwidth]{figures/rankcorrplot-1.pdf}
-\caption{Regression plot showing correlations ($\text{corrected-}p < 0.1$) of ROIs belonging to prototypical Down Syndrome samples with behavioral scores.
-First column shows raw scores (percentiles for behavior scores and negative log-likelihoods for anomaly scores), while second column shows ranks. Note that DAS scores are percentiles in the range 0-100. Correlations shown are Spearman-rank correlations. All p-values were corrected for FDR.}
+\includegraphics[width=\textwidth]{figures/rankcorrplot-fig1.pdf}
+\caption{Spearman-rank correlations ($\text{corrected-}p < 0.1$) between ROIs belonging to prototypical Down Syndrome samples and behavioral scores.
+First column shows raw scores (percentiles for behavior scores and negative log-likelihoods for anomaly scores), while second column shows ranks. Note that all \textit{percentiles} in the range 0-100. All p-values were corrected for FDR.}
 \label{fig:roi-scatter}
 \end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.93\textwidth, height=1.46\textwidth]{figures/rankcorrplot-fig2.pdf}
+\caption{Continuation of correlations from~\figref{fig:roi-scatter}}
+\label{fig:roi-scatter-cont}
+\end{figure}
+
 
 \begin{figure}[ht]
 \centering
