@@ -37,7 +37,7 @@ Note that for the rest of the chapter, I will be utilizing the formulation of~\c
     \label{eq:log_concrete}
 \end{equation}
 
-As $\lambda \rightarrow 0$, the computation approaches an argmax, while large values of $\lambda$ will push the random variable towards a uniform distribution. This main purpose of preferring the ExpConcrete Distribution over the Concrete Distribution is numerical stability, as the former is defined in the log domain.
+As $\lambda \rightarrow 0$, the computation approaches an argmax, while large values of $\lambda$ will push the random variable towards a uniform distribution. The main purpose of preferring the ExpConcrete Distribution over the Concrete Distribution is numerical stability, as the former is defined in the log domain.
 
 
 \subsection*{Score Matching with Categorical Variables}
@@ -114,7 +114,7 @@ Following~\cite{Song2019}, I can modify my loss to train a NCSN with $L$ noise l
 
 \begin{equation*}
 % \label{ncsn_obj}
-    J(\theta)  = \sum_{i=0}^{L} \lambda_i^2 K^2 ~\mathbb{E}_{\mathbf{x} \sim p_{\text{data}}} \mathbb{E}_{\Tilde{\mathbf{x}} \sim p_{\lambda_i}} \s{ || \sigma( \epsilon_\theta(\Tilde{\mathbf{x}}, \lambda_i) ) - \sigma(\epsilon) ||^2 }
+    J_{GNSM}(\theta)  = \sum_{i=0}^{L} \lambda_i^2 K^2 ~\mathbb{E}_{\mathbf{x} \sim p_{\text{data}}} \mathbb{E}_{\Tilde{\mathbf{x}} \sim p_{\lambda_i}} \s{ || \sigma( \epsilon_\theta(\Tilde{\mathbf{x}}, \lambda_i) ) - \sigma(\epsilon) ||^2 }
 \end{equation*}
 
 Note that our network is now additionally conditioned on the noise level $\lambda$. Finally, our loss objective can be extended to incorporate data with multiple categorical features. For $D$ categories we have:
@@ -134,7 +134,7 @@ Observing the loss in ~\eqnref{eq:ncsn_obj}, we see that we are minimizing the d
 
 \begin{equation}
 \label{kl_obj}
-    J(\theta)  =  \sum_{d=0}^{D} \sum_{i=0}^{L} \lambda_i^2 K_d^2 ~\mathbb{E}_{\mathbf{x} \sim p_{\text{data}}} \mathbb{E}_{\Tilde{\mathbf{x}} \sim p_{\lambda_i}} \s{ D_{\text{KL}} (\sigma(\epsilon) \parallel  \sigma( \epsilon_\theta(\tilde{\mathbf{x}}_d) ) }
+    J_{GNSM}(\theta)  =  \sum_{d=0}^{D} \sum_{i=0}^{L} \lambda_i^2 K_d^2 ~\mathbb{E}_{\mathbf{x} \sim p_{\text{data}}} \mathbb{E}_{\Tilde{\mathbf{x}} \sim p_{\lambda_i}} \s{ D_{\text{KL}} (\sigma(\epsilon) \parallel  \sigma( \epsilon_\theta(\tilde{\mathbf{x}}_d) ) }
 \end{equation}
 
 
@@ -319,7 +319,8 @@ Figure~\ref{corrs} shows the correlations between the ground truth segmentation 
 To qualitatively assess the results of each model a subset of the worst ranked predictions are plotted alongside the groundtruth in Figures~\ref{fig:gnsm_samples},\ref{fig:dsvdd_samples}.
 The figures show predictions that were ranked to be anomalous by GNSM~\ref{fig:gnsm_samples} and DSVDD~\ref{fig:dsvdd_samples}. Images are displayed in order from highest ranking to lowest (displayed left to right).
 
-Observe how the predictions ranked by GNSM in Figure~\ref{fig:gnsm_samples} are either complete failures (most of the image is designated the background class) or severe under-segmentations. Predictions ranked by DSVDD in Figure~\ref{fig:dsvdd_samples} do not exhibit any obvious pattern of segmentation failures, with most being reasonable predictions. Please look at the extended results in Section~\ref{gnsm_ext_res} for all sorted $K=50$ rankings. 
+Observe how the predictions ranked by GNSM in Figure~\ref{fig:gnsm_samples} are either complete failures (most of the image is designated the background class) or severe under-segmentations. Predictions ranked by DSVDD in Figure~\ref{fig:dsvdd_samples} do not exhibit any obvious pattern of segmentation failures, with most being reasonable predictions.
+% Please look at the extended results in Section~\ref{gnsm_ext_res} for all sorted $K=50$ rankings. 
 
 
 I believe these results not only exemplify GNSM’s generalization capabilities to non-tabular data, but also highlight a practical application. Quantifying segmentation uncertainties is useful when deploying off-the-shelf models. My experiments prove that GNSM-MSMA may be employed as a filtering mechanism to automatically detect poor segmentations, which could then be reviewed further downstream.

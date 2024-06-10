@@ -2,7 +2,7 @@
 \label{ch:conclusion}
 
 \section{Summary}
-This thesis presents a novel methodology for anomaly detection based on the analysis of gradients of the log-density (scores). It introduced the idea of Multiscale Score Matching Analysis (MSMA): a method using \textit{multiple} scales to describe a space in which outliers may be separated form inliers.
+This thesis presents a novel anomaly detection methodology based on the analysis of gradients of the log-density (scores). It introduced the idea of Multiscale Score Matching Analysis (MSMA): a method using \textit{multiple} scales to describe a space in which outliers may be separated from inliers.
 To allow the model to incorporate categorical information, I proposed the Gumbel-Noise Score Matching (GNSM) objective to train score matching networks on discrete data. This not only opens up MSMA to tabular data but also enables future work to mix demographic data into the models.
 Spatial-MSMA further extends the methodology to localize anomalies to patches within an image. It was successfully applied to 3D MRI data and was able to detect lesions at a significantly higher accuracy compared to baselines.
 Finally, a case-study was presented to elucidate how score-norms can be employed for exploratory research and provide scientific insights into the data.
@@ -13,20 +13,19 @@ MSMA assumes that the training data is fully representative of the typical popul
 % Currently, the models do not have any world knowledge outside of the data that is provided during training.
 
 
-Additionally, while this thesis has provided empirical evidence for the anomaly detection capabilities of score-norms, it does not provide a theoretical analysis for why the score-norm space is expected to separate outliers. Such a theoretical understanding could inform the choice of hyperparamters, optimization techniques and data selection.
+Additionally, while this thesis has provided empirical evidence for the anomaly detection capabilities of score-norms, it does not provide a theoretical analysis for why the score-norm space is expected to separate outliers. Such a theoretical understanding could inform the choice of hyperparameters, optimization techniques and data selection.
 
 MSMA, as presented in this document, requires a deep learning score estimator. The model architectures involved are often millions of parameters and require multiple GPUs to be trained. They also require long training times to converge, and training can often span multiple days\footnote{For reference, the 3D score model used in chapters~\ref{ch:localizing} and~\ref{ch:demyst} was trained for 15 days, followed by another two days for training Spatial-MSMA. }. This increases the life-cycle of each run and makes it difficult to optimize hyperparameters. These factors can impede wide-scale adoption of the presented methods, as such computational resources are not readily available to all practitioners. 
 
-It is also relevant to point out that score matching tends to be data hungry, and requires thousands of samples for training. This is a serious bottleneck in the medical imaging domain, where acquiring images is costly both in terms of time and resources. Given too few samples, the model can overfit to the training population, causing the score estimates to become unreliable at test time. Furthermore, when pooling datasets from multiple sources, practitioners are required to preprocess the data to mitigate site-wide/scanner differences. Such systematic differences between images acquired from different scanners, also pose a problem when applying MSMA to datasets it was not trained on.
+It is also relevant to point out that score matching tends to be data hungry, and requires thousands of samples for training. This is a serious bottleneck in the medical imaging domain, where acquiring images is costly both in terms of time and resources. Given too few samples, the model can overfit to the training population, causing the score estimates to become unreliable at test time.
+Moreover, when combining datasets from various sources, researchers must account for systematic variations across different sites and scanners. These inherent differences between images acquired using different scanning equipment can hinder the effective application of MSMA to datasets that were not included in the model's training process.
+% Furthermore, when pooling datasets from multiple sources, practitioners are required to preprocess the data to mitigate site-wide/scanner differences. Such systematic differences between images acquired from different scanners, also pose a problem when applying MSMA to datasets it was not trained on.
+
+
 % For instance, in Chapter~\ref{ch:demyst}, a held out inlier set was included in the training of MSMA. This was done as the IBIS study uses different scanning protocols compared to ABCD and HCPD.
 
 
 % This preprocessing is commonly referred to as harmonization in the medical imaging field and is a known problem.
-
-
-% While deep learning models for natural images can benefit from publically available models, pretrained on larghe datasets, as the time of this writying, there are not
-
-% It is not obvious whether the score matching loss directly corresponds to the anomaly detection capabilities
 
 
 
@@ -39,7 +38,7 @@ It is also relevant to point out that score matching tends to be data hungry, an
 
 There are many short-term directions for extending the work produced by this thesis. The first of which would be to train the entire MSMA pipeline model in an end-to-end fashion. That is, we may use a combined loss objective to train a score model, a likelihood model for MSMA, and a patch-based likelihood model for Spatial-MSMA. Doing so, could focus the model's attention towards input features that are best suited for anomaly detection.
 
-Next, it may be worthwhile to automate the procedure of specifiying the number of noise scales used in MSMA, which is currently a user-defined hyperparameter. It may be possible to remove this hyperparameter by employing a 'routing' network, such as those use in mixture-of-experts models~\cite{zoph2022stmoe}. Such a network would be responsible for selecting a subset of time points at inference time according to the input sample. Intuitively, the model would select only those time points that have the highest probability of detecting the input in the score-norm space.
+Next, it may be worthwhile to automate the procedure of specifying the number of noise scales used in MSMA, which is currently a user-defined hyperparameter. It may be possible to remove this hyperparameter by employing a 'routing' network, such as those use in mixture-of-experts models~\cite{zoph2022stmoe}. Such a network would be responsible for selecting a subset of time points at inference time according to the input sample. Intuitively, the model would select only those time points that have the highest probability of detecting the input in the score-norm space.
 
 Another avenue of research would be to incorporate metadata paired with the images into the analysis. For natural images, one could include the text captions or class labels. In medical imaging, it may be possible to include demographic data or diagnostic reports, in addition to the brain MRIs. Furthermore, while the GNSM objective is well-suited for learning scores of categorical information, there are novel developments into categorical score matching such as~\cite{graves2024bayesian,lou2024discrete}. It is an open question whether these methods can be used in MSMA, and how well they compare to GNSM.
 

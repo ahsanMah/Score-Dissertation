@@ -27,7 +27,7 @@ the Parzen window based objective is equivalent to the original objective propos
 Taking it one step further, assume the Parzen density estimate is chosen to estimate the joint density of clean and \textit{corrupted} samples $(x, \tilde{x})$ i.e. $q_{\sigma}(x, \tilde{x}) = q_{\sigma}(x | \tilde{x} ) p(x) $. Thus, the DSM objective is simply:
 \begin{align}
 \label{eq:denoising_sm}
-    J_{DSM}(\theta) &= \mathbb{E}_{\tilde{x}\sim q_{\sigma}(x, \tilde{x})} \frac{1}{2} \s{ \norm{s_\theta(\tilde{x}) - \nabla_{\tilde{x}} \log q_{\sigma}(x | \tilde{x}) }^2 }
+    J_{DSM}(\theta) &= \mathbb{E}_{\tilde{x}\sim q_{\sigma}(x, \tilde{x})} \frac{1}{2} \s{ \norm{s_\theta(\tilde{x}) - \nabla_{\tilde{x}} \log q_{\sigma}(\tilde{x} | x ) }^2 }
 \end{align}
 
 DSM mitigates the need for computing second order gradients as is the case for \eqnref{eq:implicit_sm}. Furthermore, if $q_{\sigma}$ is set as the Gaussian kernel $\mathcal{N}(\tilde{x} |  x,\,\sigma^{2}I)$, then $\nabla_x \log q_{\sigma}(\tilde{x}) = \frac{(x - \tilde{x})}{\sigma}$. One can now see the connection between score matching and the denoising autoencoder objective (When using a Gaussian kernel). The score model is effectively being trained to estimate the \textit{noise} that was added to the image.
@@ -41,7 +41,7 @@ I will make use of this fact when deriving a score matching objective for catego
 \cite{Song2019} extended the DSM objective in \eqnref{eq:denoising_sm} to incorporate multiple scales $\sigma$, and train a so-called Noise Conditioned Score Network (NCSN). The authors further outlined an iterative sampling algorithm, dubbed annealed Langevin dynamics, enabling the score network to be employed as a deep generative model. Let $\{\sigma_i\}_{i=1}^L$ be a positive geometric sequence that satisfies $\frac{\sigma_1}{\sigma_2} = ... = \frac{\sigma_{L-1}}{\sigma_{L}} >  1$. NCSN is a conditional network, $s_{\theta}(x,\sigma)$, trained to jointly estimate scores for various levels of noise $\sigma_i$ such that $\forall \sigma \in \{\sigma_i\}_{i=1}^L: s_{\theta}(x,\sigma) \approx \nabla_x \log q_{\sigma}(x)$. In \cite{Song2019}, the conditioning information is explicitly provided via a one-hot vector denoting the noise level used to perturb the data. The network is then trained via a modified denoising score matching objective as shown in \eqnref{eq:ncsn_dsm}.
 \begin{equation}
 \label{eq:ncsn_dsm}
-\frac{1}{L} \sum_{i=1}^L \lambda(\sigma_i)
+J_{NCSN}(\theta) = \frac{1}{L} \sum_{i=1}^L \lambda(\sigma_i)
 \s{\frac{1}{2} \displaystyle \text{~} \mathbb{E}_{\tilde{x}\sim q_{\sigma_i} (\tilde{x}|x) p_{\text{data}}(x)} \s{ \norm{ s_{\theta}(\tilde{x}, \sigma_i) + (\frac{\tilde{x} - x}{\sigma_i^2}) }^2_2  } }
 \end{equation}
 
@@ -92,7 +92,7 @@ This chapter has provided a comprehensive overview of the key concepts and prior
 
 The survey of anomaly detection approaches - ranging from probability-based methods like mixture models and normalizing flows, to reconstruction-based techniques like autoencoders - highlights the diversity of existing methodologies. However, it also reveals limitations in the detection capabilities of these models, with models showing inconsistent performance across tasks or simply failing to detect OOD datasets. This gap motivates the need for novel unsupervised anomaly detection frameworks that can effectively model structured, non-continuous data. The review of post-hoc out-of-distribution detection techniques provides further context for the need of an approach that is not label dependent and can generalize to models other than classifiers. 
 
-By establishing the theoretical underpinnings and contextualizing the challenges, this chapter equips the reader with the necessary background to fully appreciate the significance and novelty of the multi-scale score matching approach introduced in the next chapter. The insights gained here will also aid in understanding how the proposed methodology can be applied to uncover scientific insights from complex datasets, as demonstrated in the case studies.
+By establishing the theoretical underpinnings and contextualizing the challenges, this chapter equips the reader with the necessary background to fully appreciate the significance and novelty of the multiscale score matching approach introduced in the next chapter.
 
 % \subsection{Methods Pertinent to Anomaly Detection in Medical Imaging}
 

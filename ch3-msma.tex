@@ -79,7 +79,7 @@ Figure~\ref{fig:norm_plots} plots the score norms of samples generated from the 
 
 However, it is imperative to note that no single scale is guaranteed to work for \textit{all} outliers. Consider outliers close to inlier modes such as the samples between Low-Density outliers and Inliers in \figref{fig:toygmm}. $\sigma_H$ results in an overlap in the score distribution of inliers and Low-Density outliers. This makes it difficult to differentiate the aforementioned ``in-between" outliers from the in-distribution samples. However, this large scale was necessary to get a big enough neighborhood context in order to capture the more distant Local-Mode outliers. Therefore, I postulate that a \emph{range} of scales is necessary for separating outliers.
 
-Admittedly, selecting this range according to the dataset is not a trivial problem. \cite{song2020improved} outlined some techniques for selecting $\{\sigma_i\}_{i=1}^L$ for NCSNs from the perspective of generative modeling. Perhaps there is a similar analog to OOD detection. I did not perform such a statistical analysis for this work and used the default range for NCSN in all my experiments. However, I observed that my defaults are surprisingly generalizable, evident by the fact that all my experiments in Section~\ref{experiments} were performed with the same scale range. In Section~\ref{hyperparams}, I further analyze how varying the scale range effects downstream accuracy and observe that the defaults were already near optimal.
+Admittedly, selecting this range according to the dataset is not a trivial problem. \cite{song2020improved} outlined some techniques for selecting $\{\sigma_i\}_{i=1}^L$ for NCSNs from the perspective of generative modeling. Perhaps there is a similar analog to OOD detection. I did not perform such a statistical analysis for this work and used the default range for NCSN in all my experiments. However, I observed that my defaults are surprisingly generalizable, evident by the fact that all my experiments in Section~\ref{sec:experiments} were performed with the same scale range. In Section~\ref{hyperparams}, I further analyze how varying the scale range effects downstream accuracy and observe that the defaults were already near optimal.
 
 
 \section{Training an MSMA Model}
@@ -127,16 +127,21 @@ To measure detection performance it is common to use threshold-free metrics esta
 
 \textbf{AUPR:} Area Under the Precision Recall Curve (AUPR) is another threshold independent metric that considers the PR curve, which plots Precision(= TP/(TP+FP) ) versus Recall(= TP/(TP+FN) ). AUPR-In and AUPR-Out consider the in-distribution samples and out-of-distribution samples as the positive class, respectively. This helps take mismatch in sample sizes into account.
 
-These metrics measure different erorrs that can occur: type-I (false positve) typye-II (false negative errors).
+% These metrics measure different erorrs that can occur: type-I (false positve) typye-II (false negative errors).
 
-Detection error directly gives us the average of the two error types as it measures FNR and FPR across thresholds .  
+% Detection error directly gives us the average of the two error types as it measures FNR and FPR across thresholds .  
 
-AUROC measure how the model is able to rtreadeoff FPR and TPR
-% and may be interpeted as the model's senitivity to Type-I errors
-AUPR can be interpeted as the average positive-predictive-value across all possible FNRs.  
+% AUROC measure how the model is able to rtreadeoff FPR and TPR
+% % and may be interpeted as the model's senitivity to Type-I errors
+% AUPR can be interpeted as the average positive-predictive-value across all possible FNRs.  
 
 
-FPR95tpr is the most specific performance metric, and can be used to ascertain the specificity of the model.
+% FPR95tpr is the most specific performance metric, and can be used to ascertain the specificity of the model.
+
+These metrics are useful for evaluating the performance of outlier detection models and understanding their strengths and weaknesses. The FPR at $95\%$ TPR metric provides a direct measure of the false probability rate, which is crucial to know for applications where a high true positive rate is required. The Detection Error metric gives an overall measure of the misclassification probability, helping to understand the model's average accuracy at detcting both inliers and outliers. The AUROC metric evaluates the model's ability to rank outliers higher than inliers, with better ranking leading to a better trade-off between true-positves and false-positives. Similarly, the AUPR metric considers the precision and recall trade-off, accounting for imbalances in the sample sizes of the two classes.
+
+Together, these metrics provide a comprehensive evaluation of the model's performance, capturing different types of errors (false positives and false negatives) and allowing for comparisons across different operating points and scenarios.
+ By considering multiple metrics, researchers and practitioners can gain insights into the model's behavior and make informed decisions based on the specific requirements and constraints of their applications.
 
 
 
@@ -151,7 +156,7 @@ The tables below report accuracy metrics for three different
 auxiliary models: Gaussian Mixture Model (GMM), Normalizing Flow density estimator (Flow),
 and a nearest-neighbour-based model (KD Tree). The purpose of reporting results from different
 models is to showcase the flexibility of MSMA. Each auxiliary model provides a different
-notion of ''distance” from the inliers. The results show that MSMA clearly outperforms baselines. Performance metrics for ODIN and Confidence Thresholding were taken from the original papers. Therefore results for some experiments are missing. 
+notion of ``distance" from the inliers. The results show that MSMA clearly outperforms baselines. Performance metrics for ODIN and Confidence Thresholding were taken from the original papers. Therefore results for some experiments are missing. 
 
 % For brevity, only report \textbf{ FPR (95\% TPR)} and \textbf{AUROC}. All other metric comparisons are reported in the Section~\ref{msma_extended_results}. 
 
@@ -304,47 +309,6 @@ CIFAR-10   & iSUN                & 100.0   & 100.0     & 99.9      & 98.8     & 
 \caption{Results for \textbf{AUPR-Out} with Out-of-Distribution as positive class. \textit{Higher} values are better}
 \end{table}
 
-
-
-% \begin{table}[htbp]
-% \label{msma_results}
-% \small
-% \centering
-% % \def\arraystretch{1.1}
-% \begin{tabular}{>{\centering}m{0.55in} >{\raggedright}p{0.85in} *{4} {>{\centering}m{0.55in}} * {1} {>{\centering\arraybackslash}m{0.65in}}}
-% \hline
-% \begin{tabular}[c]{@{}c@{}}Dataset\end{tabular} & 
-% \begin{tabular}[c]{@{}c@{}}OOD\\ Dataset\end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}GMM\\ MSMA \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Flow\\ MSMA \end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}KD Tree \\MSMA\end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}ODIN \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Confidence \end{tabular} \\ \hline
-% % & \multicolumn{5}{c}{FPR / AUROC}
-
-%          & TinyImageNet
-%           & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}  & -    & 1.8 / 99.6  \\  
-%           & LSUN           
-%           & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}  & -          & 0.8 / 99.8 \\  
-% SVHN      & iSUN           
-%           & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}  & -          & 1.0 / 99.8 \\ 
-%           & All Images     
-%           & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}  & -          & 4.3 / 99.2 \\
-%           & All Images*    & -             & -             & -            & 8.6 /97.2 & 4.1 / 99.2 \\ \hline
-
-%           & TinyImageNet   
-%           & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}   & 0.3 / 99.9   & 7.5 / 98.5   & 18.4 / 97.0  \\  
-%           & LSUN           
-%           & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}   & 0.6 / 99.9   & 3.8 / 99.2   & 16.4 / 97.5 \\  
-% CIFAR-10     & iSUN           
-%           & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}   & 0.4 / 99.9   & 6.3 / 98.8   & 16.3 / 97.5 \\
-%           & All Images     
-%           & \textbf{0} / \textbf{100.0}   & \textbf{0} / \textbf{100.0}   & 0.4 / 99.9   & -            & 19.2 / 97.1 \\
-%           & All Images*    & -             & -             & -            & 7.8 / 98.4   & 11.2 / 98.0 \\ \hline
-% \end{tabular}%\hspace*{-0.1\textwidth}
-% \caption{Comparing our auxiliary methods against existing state-of-the-art. \textbf{FPR (95\% TPR)} (\textit{Lower} is better)/ \textbf{AUROC} (\textit{Higher} is better). MSMA methods unequivocally outperform previous work in all tests, with KD Trees only slightly worse than GMM and Flow variants.}
-% \end{table}
-
 \begin{table}[tbhp]
 \small
 \centering
@@ -408,10 +372,10 @@ $\norm{ \frac{\partial \log p(x)}{\partial x}}$       & Approx. Mass JEM
 Table~\ref{cifar_perf} shows MSMAs performance for this task. Note that \textit{all} three auxiliary models definitively outperform the baselines (see Table~\ref{likelihoods}), with KD-Trees preforming the best. Likelihood Ratios~\cite{Ren2019}, and JEM~\cite{Grathwohl2020Your} are two unsupervised methods that have tackled this problem and have reported current state-of-the-art results. Table~\ref{likelihoods} summarizes the results that were reported by these papers. Both report AUROCs, with \cite{Ren2019} additionally reporting AUPR(In) and FPR at 80\% TPR. Since each method proposes a different detection function, we also provide them for reference.
 \goodbreak
 
-\section{Case Study: Age based OOD Detection from Brain MRI Scans}
+\section{Case Study: Age based OOD Detection in Brain MRIs}
 \label{sec:brain_experiment}
 
-In this section I report MSMA's performance on a real-world case study. Here the task is to detect brain Magnetic Resonance Images (MRIs) from pediatric subjects at an age (1 - 6 years) that is younger than the inlier data (9 - 11 years of age). We expect visible differences in image contrast and local brain morphometry between the brains of a toddler and an adolescent. As a child grows, their brain matures and the corresponding scans appear more like the prototypical adult brain. This provides an interesting gradation of samples being considered out-of-distribution with respect to age.
+In this section I report MSMA's performance on a real-world case study. Here the task is to distinguish brain Magnetic Resonance Image (MRI) scans, based on age. I consider pediatric subjects at school-age (9 - 11 years of age) as the inlier distribution and a younger age group (1 - 6 years) as out-of-distribution. We expect visible differences in image contrast and local brain morphometry between the brains of toddlers and school-age children. As a child grows, their brain matures and the corresponding scans appear more like the prototypical adult brain. This provides an interesting gradation of samples being considered out-of-distribution with respect to age.
 
 I employ 3500 high resolution T1-weighted MR images obtained through the NIH large scale ABCD study~\cite{Casey2018adolescent}, which represent data from the general adolescent population (9-11 years of age). This implies that my in-distribution dataset will have high variation. After standard preprocessing, we extracted for each dataset three mid-axial slices and resized them to be 90x110 pixels, resulting in $\sim$11k axial images (10k  training, 1k testing). For my outlier data, we employ MRI datasets of children aged 1, 2, 4 and 6 years (500 each) from the UNC EBDS database \cite{Stephens:2020bo,Gilmore:2020ct}.
 \begin{figure}[tbhp]
@@ -513,192 +477,3 @@ This chapter introduced MSMA: a method based on multiscale score matching. MSMA 
 Section~\ref{sec:experiments} demonstrates how MSMA outperforms baseline methods in \textit{every} metric for \textit{all} benchmark experiments. 
 
 The excellent results reported in this chapter empirically validate MSMA as a fast, general purpose anomaly detector. The following chapters will focus on extending MSMA and applying it to 3D MRI data for detecting neurodevelopmental disorders.
-
-% \section{Extended Tabulated Results}
-% \label{msma_extended_results}
-
-% This section contains the tables for the extended results. It reports accuracy metrics for three different auxiliary models: Gaussian Mixture Model (GMM), Normalizing Flow density estimator (Flow), and a nearest-neighbour-based model (KD Tree). The purpose of reporting results from different models is to showcase the flexibility of my approach. Each auxiliary model provides a different notion of "distance" from the inliers. A user can choose a downstream model according to their data needs. For instance, a tree-based model can be computationally efficient for high dimensional datasets, compared to the density-based models.
-
-% \begin{table}[tbhp]
-% \label{fpr}
-% \small
-% % \def\arraystretch{1.2}
-% \begin{tabular}{>{\centering}m{0.8in} >{\raggedright}p{0.8in} *{3} {>{\centering}m{0.4in}} * {2} {>{\centering\arraybackslash}m{0.7in}}}
-% \hline
-% \begin{tabular}[c]{@{}c@{}}In-distribution\\ Dataset\end{tabular} & 
-% \begin{tabular}[c]{@{}c@{}}OOD\\ Dataset\end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}GMM \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Flow \end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}KD \\ Tree\end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}ODIN \\ (DenseNet) \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Confidence\\ (VGG13)\end{tabular} \\ \hline
-
-%            & TinyImageNet               & 0.0   & 0.0   & 0.0    & -      & 1.8  \\  
-%            & LSUN                       & 0.0   & 0.0   & 0.0    & -      & 0.8 \\  
-% SVHN       & iSUN                       & 0.0   & 0.0   & 0.0    & -      & 1.0 \\ 
-%            & All Images                 & 0.0   & 0.0   & 0.0    & -      & 4.3 \\
-%            & All Images*                & -     & -   & -        & 8.6    & 4.1 \\ \hline
-
-%            & TinyImageNet               & 0.0   & 0.0   & 0.3   & 7.5     & 18.4  \\  
-%            & LSUN                       & 0.0   & 0.0   & 0.6   & 3.8     & 16.4 \\  
-% CIFAR-10   & iSUN                       & 0.0   & 0.0   & 0.4   & 6.3     & 16.3 \\
-%            & All Images                 & 0.0   & 0.0   & 0.4   & -       & 19.2 \\
-%            & All Images*                & -     & -     & -     & 7.8     & 11.2 \\ \hline
-% \end{tabular}%\hspace*{-0.1\textwidth}
-% \caption{Results for \textbf{FPR (95\% TPR)}. \textit{Lower} values are better.}
-% \end{table}
-
-% \begin{table}[tbhp]
-% \label{auc}
-% \small
-% % \def\arraystretch{1.2}
-% \begin{tabular}{>{\centering}m{0.8in} >{\raggedright}p{0.8in} *{3} {>{\centering}m{0.4in}} * {2} {>{\centering\arraybackslash}m{0.7in}}}
-% \hline
-% \begin{tabular}[c]{@{}c@{}}In-distribution\\ Dataset\end{tabular} & 
-% \begin{tabular}[c]{@{}c@{}}OOD\\ Dataset\end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}GMM \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Flow \end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}KD \\ Tree\end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}ODIN \\ (DenseNet) \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Confidence\\ (VGG13)\end{tabular} \\ \hline
-
-%            & TinyImageNet               & 100.0   & 100.0   & 100.0    & -      & 99.6  \\
-%            & LSUN                       & 100.0   & 100.0   & 100.0    & -      & 99.8 \\  
-% SVHN       & iSUN                       & 100.0   & 100.0   & 100.0    & -      & 99.8 \\
-%            & All Images                 & 100.0   & 100.0   & 100.0    & -      & 99.2 \\
-%            & All Images*                & -       & -       & -        & 97.2   & 99.2 \\ \hline
-           
-%            & TinyImageNet                & 100.0   & 100.0  & 99.9   & 98.5     & 97.0  \\
-%            & LSUN                       & 100.0   & 100.0   & 99.9   & 99.2     & 97.5 \\  
-% CIFAR-10   & iSUN                       & 100.0   & 100.0   & 99.9   & 98.8     & 97.5 \\
-%            & All Images                 & 100.0   & 100.0   & 99.9   & -        & 97.1 \\
-%            & All Images*                & -       & -       & -      & 98.4     & 98.0 \\ \hline
-% \end{tabular}%\hspace*{-0.1\textwidth}
-% \caption{Results for \textbf{AUROC}. \textit{Higher} values are better. All three auxiliary methods perform better than baselines.}
-% \end{table}
-
-% \begin{table}[tbhp]
-% \label{de}
-% \small
-% % \def\arraystretch{1.2}
-% \begin{tabular}{>{\centering}m{0.8in} >{\raggedright}p{0.8in} *{3} {>{\centering}m{0.4in}} * {2} {>{\centering\arraybackslash}m{0.7in}}}
-% \hline
-% \begin{tabular}[c]{@{}c@{}}In-distribution\\ Dataset\end{tabular} & 
-% \begin{tabular}[c]{@{}c@{}}OOD\\ Dataset\end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}GMM \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Flow \end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}KD \\ Tree\end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}ODIN \\ (DenseNet) \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Confidence\\ (VGG13)\end{tabular} \\ \hline
-
-%            & TinyImageNet               & 0.0   & 0.0   & 0.1    & -      & 3.1  \\  
-%            & LSUN                       & 0.0   & 0.0   & 0.1    & -      & 2.0 \\  
-% SVHN       & iSUN                       & 0.0   & 0.0   & 0.1    & -      & 2.2 \\ 
-%            & All Images                 & 0.0   & 0.0   & 0.1    & -      & 4.6 \\
-%            & All Images*                & -       & -   & -      & 6.8    & 4.5 \\ \hline
-
-%            & TinyImageNet               & 0.0   & 0.0   & 1.0   & 6.3     & 9.4  \\  
-%            & LSUN                       & 0.0   & 0.1   & 1.5   & 4.4     & 8.3 \\  
-% CIFAR-10   & iSUN                       & 0.0   & 0.0   & 1.2   & 6.7     & 8.5 \\
-%            & All Images                 & 0.0   & 0.0   & 1.2   & -       & 9.1 \\
-%            & All Images*                & -       & -   & -     & 6.0     & 6.9 \\ \hline
-% \end{tabular}%\hspace*{-0.1\textwidth}
-% \caption{Results for \textbf{Detection Error}. \textit{Lower} values are better.}
-% \end{table}
-
-% \begin{table}[tbhp]
-% \label{aupr_in}
-% \small
-% % \def\arraystretch{1.2}
-% \begin{tabular}{>{\centering}m{0.8in} >{\raggedright}p{0.8in} *{3} {>{\centering}m{0.4in}} * {2} {>{\centering\arraybackslash}m{0.7in}}}
-% \hline
-% \begin{tabular}[c]{@{}c@{}}In-distribution\\ Dataset\end{tabular} & 
-% \begin{tabular}[c]{@{}c@{}}OOD\\ Dataset\end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}GMM \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Flow \end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}KD \\ Tree\end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}ODIN \\ (DenseNet) \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Confidence\\ (VGG13)\end{tabular} \\ \hline
-       
-%            & TinyImageNet        & 100.0   & 100.0     & 100.0      & -        & 99.8  \\  
-%            & LSUN                & 100.0   & 100.0     & 100.0      & -        & 99.9 \\  
-% SVHN       & iSUN                & 100.0   & 100.0     & 100.0      & -        & 99.9 \\ 
-%            & All Images          & 100.0   & 100.0     & 100.0      & -        & 98.5 \\
-%            & All Images*         & -       & -         & -         & 92.5     & 98.6 \\ \hline
-
-%            & TinyImageNet        & 100.0   & 100.0     & 99.9      & 98.6     & 97.3  \\  
-%            & LSUN                & 100.0   & 100.0     & 99.8      & 99.3     & 97.8 \\  
-% CIFAR-10   & iSUN                & 100.0   & 100.0     & 99.9      & 98.9     & 98.0 \\
-%            & All Images          & 100.0   & 100.0     & 99.9      & -        & 92.0 \\
-%            & All Images*         & -       & -         & -         & 95.3     & 94.5 \\ \hline
-% \end{tabular}
-
-% \caption{Results for \textbf{AUPR In} with In-distribution as positive class. \textit{Higher} values are better}
-% \end{table}
-
-% \begin{table}[tbhp]
-% \label{aupr_out}
-% \small
-% \def\arraystretch{1.2}
-% \begin{tabular}{>{\centering}m{0.8in} >{\raggedright}p{0.8in} *{3} {>{\centering}m{0.4in}} * {2} {>{\centering\arraybackslash}m{0.7in}}}
-% \hline
-% \begin{tabular}[c]{@{}c@{}}In-distribution\\ Dataset\end{tabular} & 
-% \begin{tabular}[c]{@{}c@{}}OOD\\ Dataset\end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}GMM \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Flow \end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}KD \\ Tree\end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}ODIN \\ (DenseNet) \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Confidence\\ (VGG13)\end{tabular} \\ \hline
-
-       
-%            & TinyImageNet        & 100.0   & 100.0     & 99.9      & -            & 99.1  \\  
-%            & LSUN                & 100.0   & 100.0     & 99.9      & -            & 99.6 \\  
-% SVHN       & iSUN                & 100.0   & 100.0     & 99.9      & -            & 99.5 \\ 
-%            & All Images          & 100.0   & 100.0     & 99.9      & -            & 99.6 \\
-%            & All Images*         & -       & -         & -         & 98.6         & 99.5 \\ \hline
-
-%            & TinyImageNet        & 100.0   & 100.0     & 99.9      & 98.5     & 96.9  \\  
-%            & LSUN                & 100.0   & 100.0     & 99.9      & 99.2     & 97.2 \\  
-% CIFAR-10   & iSUN                & 100.0   & 100.0     & 99.9      & 98.8     & 96.9 \\
-%            & All Images          & 100.0   & 100.0     & 99.9      & -             & 99.3 \\
-%            & All Images*         & -       & -         & -         & 99.6          & 99.5 \\ \hline
-% \end{tabular}
-
-% \caption{Results for \textbf{AUPR Out} with Out-of-Distribution as positive class. \textit{Higher} values are better}
-% \end{table}
-
-% \begin{table}[tbhp]
-% \centering
-% \small
-% % \def\arraystretch{1.2}
-% \begin{tabular}{>{\centering}m{0.5in} >{\centering}m{0.5in} >{\centering}m{0.55in} >{\centering}m{0.5in} *{3} {>{\centering\arraybackslash}m{0.4in}}}
-% \hline
-% \begin{tabular}[c]{@{}c@{}}Auxiliary\\ Method\end{tabular} & 
-% \begin{tabular}[c]{@{}c@{}}OOD Age\\ (Years)\end{tabular} & 
-%             % FPR (95\% TPR) & AUROC    & AUPR In  & AUPR Out \\ \hline
-% \begin{tabular}[j]{@{}c@{}}FPR\\ (95\% TPR)\\ $\downarrow$ \end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}Detection\\ Error\\ $\downarrow$ \end{tabular} & 
-% \begin{tabular}[j]{@{}c@{}}AUROC\\ \\$\uparrow$\end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}AUPR\\ In\\ $\uparrow$\end{tabular} &
-% \begin{tabular}[j]{@{}c@{}}AUPR\\ Out\\ $\uparrow$\end{tabular} \\ \hline
-%           & 1               & 0.2    & 0.4     & 99.9    & 99.9     & 99.9 \\  
-%           & 2               & 0.6    & 1.0     & 99.7    & 99.5     & 99.9 \\  
-% GMM       & 4               & 23.7   & 9.2     & 96.1    & 93.8     & 97.9 \\ 
-%           & 6               & 30.5   & 9.7     & 95.0    & 92.2     & 96.8 \\ \hline
-%         %   & 8               & 49.1   & 18.2    & 89.6    & 80.1     & 94.7 \\ \hline
-
-%           & 1               & 0.2    & 0.3     & 99.9    & 99.9     & 99.9 \\  
-%           & 2               & 0.6    & 1.3     & 99.7    & 99.4     & 99.9 \\  
-% Flow      & 4               & 12.2   & 8.4     & 97.3    & 94.6     & 98.8 \\ 
-%           & 6               & 28.9   & 12.5    & 94.3    & 88.7     & 97.5 \\ \hline
-%         %   & 8               & 26.6   & 14.2    & 92.1    & 79.4     & 96.7 \\ \hline
-          
-%           & 1               & 2.5    & 2.6     & 99.3    & 98.2     & 99.7 \\  
-%           & 2               & 3.6    & 3.1     & 98.9    & 96.2     & 99.6 \\  
-% KD Tree   & 4               & 18.6   & 10.7    & 95.7    & 91.0     & 98.0 \\ 
-%           & 6               & 39.2   & 14.9    & 91.6    & 84.2     & 95.8 \\ \hline
-%         %   & 8               & 35.6   & 15.5    & 91.0    & 80.5     & 95.8 \\ \hline
-% \end{tabular}%\hspace*{-0.1\textwidth}
-% \caption{Comparison of all auxiliary models tasked to separate the brain scans of different age groups. In-distribution samples are 9-11 years of age. All values are shown in percentages. $\downarrow$ indicates lower values are better and $\uparrow$ indicates higher values are better.}
-% \label{brain_perf_full}
-% \end{table}
