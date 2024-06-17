@@ -1,24 +1,3 @@
-%The word ÒAbstractÓ should be centered 2? below the top of the page. 
-%Skip one line, then center your name followed by the title of the 
-%thesis/dissertation. Use as many lines as necessary. Centered below the 
-%title include the phrase, in parentheses, Ò(Under the direction of  
-%_________)Ó and include the name(s) of the dissertation advisor(s).
-%Skip one line and begin the content of the abstract. It should be 
-%double-spaced and conform to margin guidelines. An abstract should not 
-%exceed 150 words for a thesis and 350 words for a dissertation. The 
-%latter is a requirement of both the Graduate School and UMI's 
-%Dissertation Abstracts International.
-%Because your dissertation abstract will be published, please prepare and 
-%proofread it carefully. Print all symbols and foreign words clearly and 
-%accurately to avoid errors or delays. Make sure that the title given at 
-%the top of the abstract has the same wording as the title shown on your 
-%title page. Avoid mathematical formulas, diagrams, and other 
-%illustrative materials, and only offer the briefest possible description 
-%of your thesis/dissertation and a concise summary of its conclusions. Do 
-%not include lengthy explanations and opinions.
-%The abstract should bear the lower case Roman number ii (if you did not 
-%include a copyright page) or iii (if you include a copyright page).
-
 \begin{center}
 \vspace*{52pt}
 {\normalfont\textbf{ABSTRACT}}
@@ -26,10 +5,14 @@
 
 \begin{singlespace}
 Ahsan Mahmood: Anomaly Detection in Medical Imaging via Score Matching \\
-(Under the direction of Your Advisor)
+(Under the direction of Martin Styner)
 \end{singlespace}
 \end{center}
 
-...
+Anomaly detection is a critical task across various domains, including healthcare, manufacturing, and finance. While deep learning has shown tremendous success in various supervised tasks, unsupervised anomaly detection remains an open challenge. In this dissertation, I introduce Multiscale Score Matching Analysis (MSMA), a novel methodology that enables unsupervised anomaly detection by analyzing score functions, which represent the gradients of the log-probability density with respect to the data.
+
+MSMA estimates score functions at multiple noise scales, leveraging the intuition that anomalies exhibit distinct characteristics at different scales. The resulting multiscale score vectors are used to learn the distribution of inlier data, enabling the detection of out-of-distribution samples. To extend MSMA to mixed continuous and categorical data, I propose a novel score matching objective, Gumbel Noise Score Matching (GNSM), for learning scores of categorical variables. Furthermore, I introduce Spatial-MSMA, an extension that incorporates spatial information to localize anomalies within images. Spatial-MSMA is successfully applied to 3D brain MRI data, demonstrating its capability in detecting lesions. Finally, I present a case study, illustrating how MSMA can be employed as a hypothesis-generating tool. I will demonstrate how MSMA provides insights into the structural brain differences associated with Down Syndrome.
+
+Overall, my research introduces a principled and flexible framework for unsupervised anomaly detection, localization, and data exploration. While this work focused on medical imaging, MSMA has potential applications in a variety of domains, and can easily be extended to other modalities such as audio and tabular data.
 
 \clearpage
