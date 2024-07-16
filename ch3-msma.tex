@@ -3,6 +3,13 @@
 
 This chapter will introduce Multiscale Score Matching Analysis (MSMA); my method for outlier detection via score norms. The first sections will explore the intuition behind score-norms and the need for multiple scales. The latter sections empirically demonstrate MSMA's best-in-class performance on OOD benchmarks. Note that this work used Noise Conditioned Score Networks (NCSNs)~\cite{Song2019}, which have been superseded by diffusion models (employed in later chapters). However, NCSNs laid the foundation and proof of concept upon which the rest of the research was developed.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/msma-schema.pdf}
+    \caption{A schematic overview of MSMA. A neural score estimator produces score tensors at multiple noise scales for the inlier data. The score tensors are reduced using the L2 norm, producing the score-norm vectors. These vectors are fed into an auxiliary model such as a Gaussian Mixture Model, which learns the space of the score-norm vectors. The output of the auxiliary model will be used as the outlier score.}
+    \label{fig:spatial-overview}
+\end{figure}
+
 \section{Multiscale Score Analysis}
 \label{sec:multiscale}
 % \label{sec:neighborhoods}
@@ -146,7 +153,7 @@ Together, these metrics provide a comprehensive evaluation of the model's perfor
 
 
 \subsection*{Comparison Against Previous OOD Methods}
-\label{ood_experiments}
+\label{sec:ood_experiments}
 
 I compare my work against Confidence Thresholding (\cite{Devries}) and ODIN (\cite{Liang2017}). For all experiments I report the results for the in-distribution \textit{testset} vs the out-of-distribution datasets. Note that \textit{All Images*} is a version of \textit{All Images} where both ODIN and Confidence Thresholding perform input preprocessing. Particularly, they perturb the samples in the direction of the softmax gradient of the classifier:
 $\tilde{x} = x - \epsilon \text{ sign} (- \nabla_x log S_y(x;T))$.
@@ -377,7 +384,7 @@ Table~\ref{cifar_perf} shows MSMAs performance for this task. Note that \textit{
 
 In this section I report MSMA's performance on a real-world case study. Here the task is to distinguish brain Magnetic Resonance Image (MRI) scans, based on age. I consider pediatric subjects at school-age (9 - 11 years of age) as the inlier distribution and a younger age group (1 - 6 years) as out-of-distribution. We expect visible differences in image contrast and local brain morphometry between the brains of toddlers and school-age children. As a child grows, their brain matures and the corresponding scans appear more like the prototypical adult brain. This provides an interesting gradation of samples being considered out-of-distribution with respect to age.
 
-I employ 3500 high resolution T1-weighted MR images obtained through the NIH large scale ABCD study~\cite{Casey2018adolescent}, which represent data from the general adolescent population (9-11 years of age). This implies that my in-distribution dataset will have high variation. After standard preprocessing, we extracted for each dataset three mid-axial slices and resized them to be 90x110 pixels, resulting in $\sim$11k axial images (10k  training, 1k testing). For my outlier data, we employ MRI datasets of children aged 1, 2, 4 and 6 years (500 each) from the UNC EBDS database \cite{Stephens:2020bo,Gilmore:2020ct}.
+I employ 3500 high resolution T1-weighted MR images obtained through the NIH large scale ABCD study~\cite{Casey2018adolescent}, which represent data from the general adolescent population (9-11 years of age). This implies that my in-distribution dataset will have high variation. After standard preprocessing, we extracted for each dataset three mid-axial slices and resized them to be 90x110 pixels, resulting in $\sim$11k axial images (10k  training, 1k testing). For my outlier data, I sourced MRI datasets of children aged 1, 2, 4 and 6 years (500 each) from the UNC EBDS database \cite{Stephens:2020bo,Gilmore:2020ct}.
 \begin{figure}[tbhp]
 \centering
 \begin{subfigure}[b]{0.22\textwidth}
@@ -409,7 +416,47 @@ I employ 3500 high resolution T1-weighted MR images obtained through the NIH lar
 \label{fig:brain_plots}
 \end{figure}
 
-MSMA was effectively able to identify younger age groups as out-of-distribution. Table~\ref{brain_perf} reports the results for GMMs trained for this task. As expected, the separation performance decreases as age increases. Note that we kept the same hyperparameters for our auxiliary methods as in the previous experiments despite this being a higher resolution scenario. I also note that the Flow model and KD Tree perform equally well and refer the reader to Table~\ref{brain_perf_full} in Section~\ref{msma_extended_results}.
+MSMA was effectively able to identify younger age groups as out-of-distribution. Table~\ref{tab:brain_perf_full} reports the results for different MSMA auxiliary models trained for this task. As expected, the separation performance decreases as age increases. Note that I kept the same hyperparameters for our auxiliary methods as in the previous experiments despite this being a higher resolution scenario.
+% I also note that the Flow model and KD Tree perform equally well and refer the reader to Table~\ref{brain_perf_full} in Section~\ref{msma_extended_results}.
+
+\begin{table}[tbhp]
+\centering
+\small
+% \def\arraystretch{1.2}
+\begin{tabular}{>{\centering}m{0.5in} >{\centering}m{0.5in} >{\centering}m{0.55in} >{\centering}m{0.5in} *{3} {>{\centering\arraybackslash}m{0.4in}}}
+\hline
+\begin{tabular}[c]{@{}c@{}}Auxiliary\\ Method\end{tabular} & 
+\begin{tabular}[c]{@{}c@{}}OOD Age\\ (Years)\end{tabular} & 
+            % FPR (95\% TPR) & AUROC    & AUPR In  & AUPR Out \\ \hline
+\begin{tabular}[j]{@{}c@{}}FPR\\ (95\% TPR)\\ $\downarrow$ \end{tabular} &
+\begin{tabular}[j]{@{}c@{}}Detection\\ Error\\ $\downarrow$ \end{tabular} & 
+\begin{tabular}[j]{@{}c@{}}AUROC\\ \\$\uparrow$\end{tabular} &
+\begin{tabular}[j]{@{}c@{}}AUPR\\ In\\ $\uparrow$\end{tabular} &
+\begin{tabular}[j]{@{}c@{}}AUPR\\ Out\\ $\uparrow$\end{tabular} \\ \hline
+          & 1               & 0.2    & 0.4     & 99.9    & 99.9     & 99.9 \\  
+          & 2               & 0.6    & 1.0     & 99.7    & 99.5     & 99.9 \\  
+GMM       & 4               & 23.7   & 9.2     & 96.1    & 93.8     & 97.9 \\ 
+          & 6               & 30.5   & 9.7     & 95.0    & 92.2     & 96.8 \\ \hline
+        %   & 8               & 49.1   & 18.2    & 89.6    & 80.1     & 94.7 \\ \hline
+
+          & 1               & 0.2    & 0.3     & 99.9    & 99.9     & 99.9 \\  
+          & 2               & 0.6    & 1.3     & 99.7    & 99.4     & 99.9 \\  
+Flow      & 4               & 12.2   & 8.4     & 97.3    & 94.6     & 98.8 \\ 
+          & 6               & 28.9   & 12.5    & 94.3    & 88.7     & 97.5 \\ \hline
+        %   & 8               & 26.6   & 14.2    & 92.1    & 79.4     & 96.7 \\ \hline
+          
+          & 1               & 2.5    & 2.6     & 99.3    & 98.2     & 99.7 \\  
+          & 2               & 3.6    & 3.1     & 98.9    & 96.2     & 99.6 \\  
+KD Tree   & 4               & 18.6   & 10.7    & 95.7    & 91.0     & 98.0 \\ 
+          & 6               & 39.2   & 14.9    & 91.6    & 84.2     & 95.8 \\ \hline
+        %   & 8               & 35.6   & 15.5    & 91.0    & 80.5     & 95.8 \\ \hline
+
+\end{tabular}%\hspace*{-0.1\textwidth}
+\caption{Comparison of all auxiliary models tasked to separate the brain scans of different age groups. In-distribution samples are 9-11 years of age. All values are shown in percentages. $\downarrow$ indicates lower values are better and $\uparrow$ indicates higher values are better.}
+\label{tab:brain_perf_full}
+\end{table}
+
+Further, I compared MSMA to f-AnoGAN~\cite{schlegl2019f} due to its promising results as an anomaly detector and its popularity in the medical community. I use the hyperparameters suggested in the original paper and trained them till convergence. Table~\ref{tab:brain_fano} compares the performance of f-AnoGAN with MSMA-GMM. Note that MSMA outperforms f-AnoGAN in \textit{all} experiments. However, f-AnoGAN is a considerably faster method, both in terms of training and inference, and allows for pixel-wise anomalies out of the box. Although, it should be noted that Spatial-MSMA introduced in Chapter~\ref{ch:localizing} will overcome the latter limitation by adding localization capabilities to MSMA.
 
 \begin{table}[tbhp]
 \small
@@ -434,10 +481,9 @@ MSMA was effectively able to identify younger age groups as out-of-distribution.
 
 \caption{MSMA-GMM trained on multiscale score estimates tasked to separate the brain scans of different age groups. In-distribution samples are 9-11 years of age. All values are shown in percentages. $\downarrow$ indicates lower values are better and $\uparrow$ indicates higher values are better. The results show that f-AnoGAN is unable to match the performance of MSMA for this task. In fact, under some metrics such as FPR at 95\% TPR, it exhibits very poor performance as an anomaly detector.}
 
-\label{brain_perf}
+\label{tab:brain_fano}
 \end{table}
 
-I compared MSMA to f-AnoGAN~\cite{schlegl2019f} due to its promising results as an anomaly detector and its popularity in the medical community. I use the hyperparameters suggested in the original paper and trained them till convergence. Interestingly, MSMA outperforms f-AnoGAN in \textit{all} experiments. However, f-AnoGAN is a considerably faster method, both in terms of training and inference, and allows for pixel-wise anomalies out of the box. Although, it should be noted that Spatial-MSMA introduced in Chapter~\ref{ch:localizing} will overcome the latter limitation by adding localization capabilities to MSMA.
 
 
 \section{Hyperparameter Analysis}
@@ -463,11 +509,11 @@ I compared MSMA to f-AnoGAN~\cite{schlegl2019f} due to its promising results as 
 \end{figure}
 
 
-This section explores MSMA's sensitivity to its two main hyperparameters utilized in NCSN: the number of noise levels ($L$) and the largest scale used ($\sigma_H$). The smallest noise scale was fixed to $\sigma_L=0.01$ through all experiments as it is low enough to learn the true score values without running into issues regarding numerical precision. The rationale being that noise perturbations to images at such a small scale are imperceptible to the human eye and are adequate to give an estimate of the true score. For all experiments, I train on CIFAR-10 and evaluate on the \emph{All Images} dataset described in Section~\ref{datasets} and plot AUROC in Figure~\ref{fig:analysis}. In order to reduce GPU memory usage and computation time, I reduced the batch size from 128 to 64, which is why we see a performance dip from the main experiment in Section~\ref{ood_experiments}. The hyperparameters for the auxiliary models are kept the same as the main experiment.
+This section explores MSMA's sensitivity to its two main hyperparameters utilized in NCSN: the number of noise levels ($L$) and the largest scale used ($\sigma_H$). The smallest noise scale was fixed to $\sigma_L=0.01$ through all experiments as it is low enough to learn the true score values without running into issues regarding numerical precision. The rationale being that noise perturbations to images at such a small scale are imperceptible to the human eye and are adequate to give an estimate of the true score. For all experiments, I train on CIFAR-10 and evaluate on the \emph{All Images} dataset described in Section~\ref{datasets} and plot AUROC in Figure~\ref{fig:analysis}. In order to reduce GPU memory usage and computation time, I reduced the batch size from 128 to 64, which is why we see a performance dip from the main experiment in Section~\ref{sec:experiments}. The hyperparameters for the auxiliary models are kept the same as the main experiment.
 
-For the number of scales $L$, I tested the values 1, 3, 10, 15, and 20, with $\sigma_H$ fixed at the default value ($\sigma_H=1$). Recall that I follow the original NCSN schema by \cite{Song2019}, and utilize a geometric sequence of sigma scales from $\sigma_H$ to $\sigma_L$ with $L$ steps (endpoint inclusive). Thus, changing \emph{L} changes the intermediate noise scales. The results in Figure~\ref{fig:L_analysis} show that MSMA is optimal near the default ($L=10$). Increasing $L$ does not significantly vary the performance, while small values such as $L=3$ are not adequate at providing enough intermediate scales. Note that $L=1$ is the degenerate case where only the largest noise scale is used. This highlights the need for a range of scales as argued in Section \ref{neighborhoods} and empirically shows that simply using one large scale is not enough. \figurename{~\ref{fig:sigma_analysis}} plots the affect of varying the largest noise scale $\sigma_H$. I test the values 0.5, 1.0, 2.0, and 10, with the default number of scales $L=10$. Again, we observe that our default $\sigma_H=1$ performs the best and there is no noticeable improvement from varying it. Considering how images are rescaled to [0,1] before they are passed to the network, we posit that $\sigma_H=1.0$ already introduces large noise, and increasing it further seems to degrade results to varying degrees. 
+For the number of scales $L$, I tested the values 1, 3, 10, 15, and 20, with $\sigma_H$ fixed at the default value ($\sigma_H=1$). Recall that I follow the original NCSN schema by \cite{Song2019}, and utilize a geometric sequence of sigma scales from $\sigma_H$ to $\sigma_L$ with $L$ steps (endpoint inclusive). Thus, changing \emph{L} changes the intermediate noise scales. The results in Figure~\ref{fig:L_analysis} show that MSMA is optimal near the default ($L=10$). Increasing $L$ does not significantly vary the performance, while small values such as $L=3$ are not adequate at providing enough intermediate scales. Note that $L=1$ is the degenerate case where only the largest noise scale is used. This highlights the need for a range of scales as argued in Section \ref{sec:multiscale} and empirically shows that simply using one large scale is not enough. \figurename{~\ref{fig:sigma_analysis}} plots the affect of varying the largest noise scale $\sigma_H$. I test the values 0.5, 1.0, 2.0, and 10, with the default number of scales $L=10$. Again, we observe that our default $\sigma_H=1$ performs the best and there is no noticeable improvement from varying it. Considering how images are rescaled to [0,1] before they are passed to the network, we posit that $\sigma_H=1.0$ already introduces large noise, and increasing it further seems to degrade results to varying degrees. 
 
-Lastly, I would like to emphasize that \emph{all} of my main out-of-distribution experiments in Section~\ref{experiments} were performed with the \emph{same} default hyperparameters, without any tuning. Despite this disadvantage, MSMA still outperforms its competitors ODIN~\cite{Liang2017}, Confidence Thresholding (\cite{Devries}), and Likelihood Ratios~\cite{Ren2019}, all of which need some fine-tuning of hyperparameters. Recognize that tuning requires apriori knowledge of the type of out-of-distribution samples the user expects. From the analysis in this section and my main experiment, \textit{I can confidently advocate the use of MSMA's defaults as they generalize across datasets and do not require such apriori knowledge.} 
+Lastly, I would like to emphasize that \emph{all} of my main out-of-distribution experiments in Section~\ref{sec:experiments} were performed with the \emph{same} default hyperparameters, without any tuning. Despite this disadvantage, MSMA still outperforms its competitors ODIN~\cite{Liang2017}, Confidence Thresholding (\cite{Devries}), and Likelihood Ratios~\cite{Ren2019}, all of which need some fine-tuning of hyperparameters. Recognize that tuning requires apriori knowledge of the type of out-of-distribution samples the user expects. From the analysis in this section and my main experiment, \textit{I can confidently advocate the use of MSMA's defaults as they generalize across datasets and do not require such apriori knowledge.} 
 
 % Of course, if anomalies are known at training time then one may tune MSMA's hyperparameters to for the optimal threshold. However, I did not do such finetuning as this Chapter is mainly concerned with introducing MSMA as a performant, easy to implement, and generalizable out-of-distribution detector.
 
