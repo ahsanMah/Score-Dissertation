@@ -1,11 +1,10 @@
-\chapter{Appendix}
+\chapter{Experiment Details for Chapter~\ref{ch:gnsm}}
 
-\section{Experiment Details for Chapter~\ref{ch:gnsm}}
+\section{Hyperparameters}
 
-\subsection*{Hyperparameters}
 ECOD is hyperparamter free so no tuning was required. Early testing showed that Isolation Forests hyperparameters were stable. Note that I did not use labelled anomalies during hyperparamater tuning and the rest of the deep learning models were tuned on an inlier-only validation set.
 
-\subsubsection*{GNSM Networks}
+\subsection*{GNSM Networks}
 
 Most of these details are easily identifiable in the open source code. However, I still provide basic information for posterity. I used the same ResNet-like architecture for all datasets:
 
@@ -95,10 +94,10 @@ For Bank I trained for 2MM iterations while for CMC and Solar, I trained for 600
 
 Lastly for MSMA, I trained a GMM on the combined train,val set. I ran a small grid search over number of components (3,5,7,9) and picked the one with the best likelihood.
 
-\subsubsection*{DSVDD}
+\subsection*{DSVDD}
 For Deep SVDD I used the implementation available in the PyOD library~\cite{zhao2019pyod}. Initial testing showed that the autoencoder variant of this model usually performed better. This version adds a reconstruction loss to the one-class objective for increased regularization. The hidden neurons were set to [1024, 512, 256], with the \texttt{swish} activation function. Training was done with the Adam optimizer at default hyperparamters, with learning rate set to 1e-3. I trained for 1000 epochs, with the batch size set to 512.
 
-\subsubsection*{DAGMM}
+\subsection*{DAGMM}
 DAGMM proved to be very difficult to train as most implementations often unexpectedly result in NaNs. In fact the implementation used by~\cite{han2022adbench} never seemed to converge for any dataset. and the loss would not improve no matter how much I tweaked the hyperparameters. I believe the matrix inverse operation during the forward pass to be the culprit for this numerical instability. 
 
 We settled on modifiying a publicly available PyTorch implementation\footnote{https://github.com/lixiangwang/DAGMM-pytorch}. I added the following changes to improve stability and performance:

@@ -17,6 +17,7 @@ In healthcare, anomalies exhibit themselves as medical pathologies such as lesio
 \end{figure}%
 
 \subsection*{Defining the term Anomaly}
+
 As of yet, there is no standard definition of the term anomaly. 
 For the purpose of my research, I will opt for a fairly loose definition of the term: any data point that does not belong to the typical set. That is, an anomaly is a sample with low probability \textit{mass}, with respect to the distribution described by the training data. 
 
@@ -44,17 +45,14 @@ My work builds on the score matching objective, which approximates the gradient 
 
 \subsection*{Autoencoders Do Not Make Good Anomaly Detectors}
 % an example of tagetial
-An overwhelming majority of anomaly models are based on some flavor of the autoencoding objective~\cite{baur_deep_2019,baur2021,tschuchnig_anomaly_2022,kascenas2023} i.e., the model is tasked to reproduce the input image. The assumption is that, having only seen typical samples during training, the autoencoder will fail to reconstruct anomalies. Consequently, one can use reconstruction errors as anomaly scores. However, one can foresee a paradox underlying this assumption. As the performance of the autoencoder increases, its reconstruction capabilities improve, and it is able to generalize to unseen data. This implies that a performant autoencoder will be a poor anomaly detector, which is exactly what we observe in practice. Well-optimized autoencoders learn to reconstruct anomalies with ease. For instance, consider Figure~\ref{fig:aefailure} taken from~\cite{baur_deep_2019}. The model in the middle column is superior at reconstruction compared to the model in the right column. However, the performant model also reconstructs anomalies, making it worse as an anomaly detector.
+An overwhelming majority of anomaly models are based on some flavor of the autoencoding objective~\cite{baur_deep_2019,baur2021,tschuchnig_anomaly_2022,kascenas2023} i.e., the model is tasked to reproduce the input image. The assumption is that, having only seen typical samples during training, the autoencoder will fail to reconstruct anomalies. Consequently, one can use reconstruction errors as anomaly scores. However, one can foresee a paradox underlying this assumption. As the performance of the autoencoder increases, its reconstruction capabilities improve, and it is able to generalize to unseen data. This implies that a performant autoencoder will be a poor anomaly detector, which is exactly what we observe in practice. Well-optimized autoencoders learn to reconstruct anomalies with ease. For instance, consider Figure~\ref{fig:ae_failure} taken from~\cite{baur_deep_2019}. The model in the middle column is superior at reconstruction compared to the model in the right column. However, the performant model also reconstructs anomalies, making it worse as an anomaly detector.
 Researchers thus try to limit performance capabilities by including regularization schemes into the objective so that the autoencoder is performant \textit{only} on inlier data and fails to generalize to other datasets. In my opinion, these constraints are ad-hoc solutions, and the objective itself is inappropriate for the task.  We need the training objective to be more closely aligned to learning typicality. 
 
 \begin{figure}[tbhp]
-\label{fig:aefailure}
 \centering
-% \begin{subfigure}[t]{0.6\textwidth}
-    \centering
-    \includegraphics[width=0.7\textwidth]{figures/dense_vs_spatial.png}
-    \caption{More performant autoencoders (middle column) will reconstruct anomalies with high accuracy, making them less appropriate for anomaly detection. However, less performant autoencoders (right column) will result in more false positives. How are practitioners supposed to determine the sweet spot? I argue that the autoencoding objective is inappropriate for anomaly detection from the start.}
-    \label{fig:ae_failure}
+\includegraphics[width=0.7\textwidth]{figures/dense_vs_spatial.png}
+\caption{More performant autoencoders (middle column) will reconstruct anomalies with high accuracy, making them less appropriate for anomaly detection. However, less performant autoencoders (right column) will result in more false positives. How are practitioners supposed to determine the sweet spot? I argue that the autoencoding objective is inappropriate for anomaly detection from the start.}
+\label{fig:ae_failure}
 \end{figure}%
 
 

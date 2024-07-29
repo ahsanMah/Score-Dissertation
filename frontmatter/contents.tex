@@ -5,7 +5,7 @@
 \cftsetrmarg{1.0in}
 
 \setlength{\cftbeforetoctitleskip}{61pt}
-\setlength{\cftaftertoctitleskip}{28pt}
+\setlength{\cftaftertoctitleskip}{11pt}
 
 % format chapter entries like other entries
 \renewcommand{\cftchapfont}{\normalfont}
@@ -17,9 +17,23 @@
 \setlength{\cftbeforesubsecskip}{10pt}
 \setlength{\cftbeforesubsubsecskip}{10pt}
 
+
+%%%% Helpful proper formatting of Appendices later on
+\makeatletter
+\@addtoreset{section}{part}
+\makeatother
+\newlength\mylen
+\renewcommand\thepart{\Roman{part}}
+\renewcommand\cftpartpresnum{Part~}
+\settowidth\mylen{\bfseries\cftpartpresnum\cftpartaftersnum}
+\addtolength\cftpartnumwidth{\mylen}
+\renewcommand{\cftchappresnum}{CHAPTER }
+\renewcommand{\cftchapaftersnum}{:}
+\renewcommand{\cftchapnumwidth}{6em}%This overwrites the calculation before
+%%%%%%%%%%%%%%%
+
 \begin{singlespace}
 \tableofcontents
 \end{singlespace}
-
 
 \clearpage

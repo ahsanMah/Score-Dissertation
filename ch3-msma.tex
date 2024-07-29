@@ -1,13 +1,13 @@
 \chapter{Multiscale Score Matching}
 \label{ch:msma}
 
-This chapter will introduce Multiscale Score Matching Analysis (MSMA); my method for outlier detection via score norms. The first sections will explore the intuition behind score-norms and the need for multiple scales. The latter sections empirically demonstrate MSMA's best-in-class performance on OOD benchmarks. Note that this work used Noise Conditioned Score Networks (NCSNs)~\cite{Song2019}, which have been superseded by diffusion models (employed in later chapters). However, NCSNs laid the foundation and proof of concept upon which the rest of the research was developed.
+This chapter will introduce Multiscale Score Matching Analysis (MSMA); my method for outlier detection via score norms. The first sections will explore the intuition behind score-norms and the need for multiple scales. The latter sections empirically demonstrate MSMA's best-in-class performance on OOD benchmarks. Note that this work used Noise Conditioned Score Networks (NCSNs)~\cite{Song2019}, which have been superseded by diffusion models (employed in later chapters). However, NCSNs laid the foundation and proof of concept upon which the rest of the research was developed. Related code is available at~\url{https://github.com/ahsanMah/msma}
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{figures/msma-schema.pdf}
     \caption{A schematic overview of MSMA. A neural score estimator produces score tensors at multiple noise scales for the inlier data. The score tensors are reduced using the L2 norm, producing the score-norm vectors. These vectors are fed into an auxiliary model such as a Gaussian Mixture Model, which learns the space of the score-norm vectors. The output of the auxiliary model will be used as the outlier score.}
-    \label{fig:spatial-overview}
+    \label{fig:msma-overview}
 \end{figure}
 
 \section{Multiscale Score Analysis}
@@ -91,7 +91,7 @@ Admittedly, selecting this range according to the dataset is not a trivial probl
 
 \section{Training an MSMA Model}
 
-I propose the inclusion of multiple noisy score estimates for the task of separating in- and out-of-distribution points, allowing for a Multiscale Score Matching Analysis (MSMA). Concretely, given $L$ noise levels, we calculate the L2-norms of per-sample scores for each level, resulting in an $L$-dimensional vector for each input sample. Motivated by my analyses in Section~\ref{multiscale}, I posit that in-distribution data points occupy distinct and dense regions in the $L$-dimensional score space.
+I propose the inclusion of multiple noisy score estimates for the task of separating in- and out-of-distribution points, allowing for a Multiscale Score Matching Analysis (MSMA). Concretely, given $L$ noise levels, we calculate the L2-norms of per-sample scores for each level, resulting in an $L$-dimensional vector for each input sample. Motivated by my analyses in Section~\ref{sec:multiscale}, I posit that in-distribution data points occupy distinct and dense regions in the $L$-dimensional score space.
 
 The \textit{cluster assumption} states that decision boundaries should not pass high density regions, but instead lie in low density regions. This implies that any auxiliary method trained to learn in-distribution regions should be able to identify OOD data points that reside outside the learned space. Thus, I propose a two step unsupervised training scheme. First, one trains a NCSN model $s_{\text{IN}}(x, \sigma_L)$ to estimate scores for inlier samples, given $\{\sigma_i\}_{i=1}^L$ levels of noise. Next, we can calculate all $L$ noisy score estimates for the $N$ training samples and take the L2-norms across the input dimensions: $[\norm{  s_{\text{IN}} (X, \sigma_1) }_2^2, ... , \norm{  s_{\text{IN}} (X, \sigma_L) }_2^2 ]$. This results in an $N$x$L$ matrix. Finally, we can train an auxiliary model (such as a Gaussian Mixture Model) on this matrix to learn the spatial regions of in-distribution samples in the $L$-dimensional space.
 

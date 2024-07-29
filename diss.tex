@@ -25,13 +25,21 @@
 \input{ch7-conclusion}
 
 % Appendices
-\appendix
+% \appendix
+\appendixpageoff
+\appendixtocoff
+\begin{appendices}
+	\addtocontents{toc}{\protect\renewcommand{\protect\cftchappresnum}{APPENDIX }\protect\renewcommand{\protect\cftchapnumwidth}{6.5em}}
+ 
+    % Switch to 1" title margins for appendices
+    \titlespacing{\chapter}{0in}{-.38in}{11pt}
+    
+    
+    % Appendix chapters
+    \input{ap1}
+    \input{ap2}
 
-% Switch to 1" title margins for appendices
-\titlespacing{\chapter}{0in}{-.38in}{11pt}
-
-% Appendix 1
-\input{ap1}
+\end{appendices}
 
 % References
 \input{common/references}

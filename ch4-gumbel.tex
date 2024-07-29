@@ -1,4 +1,4 @@
-\chapter{Detecting Anomalies in Categorical Data via Gumbel Noise Score Matching}
+\chapter{Score Matching for Categorical Data via Gumbel Noise }
 \label{ch:gnsm}
 
 It is common to represent information as discrete categories such as gender, shapes or product quality.
@@ -8,7 +8,7 @@ This is because a score is ill-defined for categorical variables. There is no no
 This chapter introduces Gumbel Noise Score Matching (GNSM), a novel method for learning scores of categorical data for the purpose of anomaly detection.
 The chapter first develops the theoretical foundations of GNSM, showing how continuous relaxations of categorical distributions through the Gumbel-Softmax trick can be combined with denoising score matching to estimate scores for categorical variables. The resulting objective allows the model to directly output score estimates for one-hot encoded categorical features. Experiments on a suite of tabular anomaly detection datasets show GNSM-MSMA achieving competitive or state-of-the-art performance compared to baseline methods, with significant improvements on certain datasets. A case study on detecting anomalous image segmentations further illustrates the versatility of the approach beyond just tabular data.
 
-The key contributions of this chapter are: 1) Developing a principled score matching framework for categorical data, and 2) Demonstrating the capability of score matching for anomaly detection on categorical types in both tabular and image datasets. The chapter highlights GNSM as a powerful and flexible approach for handling structured, non-continuous data types in anomaly detection.
+The key contributions of this chapter are: 1) Developing a principled score matching framework for categorical data, and 2) Demonstrating the capability of score matching for anomaly detection on categorical types in both tabular and image datasets. The chapter highlights GNSM as a powerful and flexible approach for handling structured, non-continuous data types in anomaly detection. Related code is available at~\url{https://github.com/ahsanMah/categorical-dsm}
 
 % \smallskip
 
